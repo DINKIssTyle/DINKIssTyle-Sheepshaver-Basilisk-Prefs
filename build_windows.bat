@@ -23,14 +23,30 @@ call venv\Scripts\activate.bat
 REM Install dependencies
 echo Installing dependencies...
 pip install --upgrade pip
-pip install qtpy PyQt6 pyinstaller
+pip install qtpy PyQt6 pyinstaller pillow
+
+REM Convert PNG to ICO if needed
+if exist "Appicon.png" (
+    if not exist "Appicon.ico" (
+        echo Converting icon to ICO format...
+        python -c "from PIL import Image; img = Image.open('Appicon.png'); img.save('Appicon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])"
+    )
+)
 
 REM Build with PyInstaller (no console, with icon)
 echo Building executable...
-pyinstaller --noconfirm --onefile --windowed ^
-    --name "EmulatorPrefs" ^
-    --add-data "Appicon.png;." ^
-    main.py
+if exist "Appicon.ico" (
+    pyinstaller --noconfirm --onefile --windowed ^
+        --name "EmulatorPrefs" ^
+        --icon "Appicon.ico" ^
+        --add-data "Appicon.png;." ^
+        main.py
+) else (
+    pyinstaller --noconfirm --onefile --windowed ^
+        --name "EmulatorPrefs" ^
+        --add-data "Appicon.png;." ^
+        main.py
+)
 
 echo.
 echo === Build Complete ===
