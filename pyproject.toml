@@ -1,0 +1,7 @@
+[project]
+name = "dinkisstyle-sheepshaver-basilisk-prefs"
+version = "0.1.0"
+description = "Sheepshaver & Basilisk II Prefs Editor"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []

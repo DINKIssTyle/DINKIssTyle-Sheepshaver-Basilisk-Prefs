@@ -719,6 +719,17 @@ class MiscTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
+        # Title Group
+        title_group = QGroupBox("Title")
+        title_layout = QFormLayout(title_group)
+        
+        self.title_edit = QLineEdit()
+        self.title_edit.setPlaceholderText("Enter window title")
+        title_layout.addRow("Title:", self.title_edit)
+        
+        layout.addWidget(title_group)
+        
+        # Miscellaneous Group
         misc_group = QGroupBox("Miscellaneous")
         misc_layout = QFormLayout(misc_group)
         
@@ -777,6 +788,7 @@ class MiscTab(QWidget):
         layout.addStretch()
     
     def load_config(self, config: dict):
+        self.title_edit.setText(str(config.get('title', '')))
         self.no_gui.setChecked(config.get('nogui', True))
         self.no_clip_conversion.setChecked(config.get('noclipconversion', False))
         self.ignore_segv.setChecked(config.get('ignoresegv', False))
@@ -790,6 +802,9 @@ class MiscTab(QWidget):
             self.delay.setValue(config.get('delay', 0))
     
     def save_config(self, config: dict):
+        title = self.title_edit.text().strip()
+        if title:
+            config['title'] = title
         config['nogui'] = self.no_gui.isChecked()
         config['noclipconversion'] = self.no_clip_conversion.isChecked()
         config['ignoresegv'] = self.ignore_segv.isChecked()
@@ -901,6 +916,10 @@ class SettingsTab(QWidget):
         basilisk_cfg_layout.addWidget(basilisk_cfg_btn)
         basilisk_layout.addRow("Config File:", basilisk_cfg_layout)
         
+        zap_basilisk_btn = QPushButton("Zap PRAM")
+        zap_basilisk_btn.clicked.connect(lambda: self.zap_pram('basilisk'))
+        basilisk_layout.addRow("", zap_basilisk_btn)
+        
         layout.addWidget(basilisk_group)
         
         # Sheepshaver Settings
@@ -922,6 +941,10 @@ class SettingsTab(QWidget):
         sheepshaver_cfg_layout.addWidget(self.sheepshaver_cfg)
         sheepshaver_cfg_layout.addWidget(sheepshaver_cfg_btn)
         sheepshaver_layout.addRow("Config File:", sheepshaver_cfg_layout)
+        
+        zap_sheepshaver_btn = QPushButton("Zap PRAM")
+        zap_sheepshaver_btn.clicked.connect(lambda: self.zap_pram('sheepshaver'))
+        sheepshaver_layout.addRow("", zap_sheepshaver_btn)
         
         layout.addWidget(sheepshaver_group)
         
@@ -954,6 +977,32 @@ class SettingsTab(QWidget):
         self.settings.setValue('sheepshaver/exe', self.sheepshaver_exe.text())
         self.settings.setValue('sheepshaver/cfg', self.sheepshaver_cfg.text())
         QMessageBox.information(self, "Settings", "Settings saved successfully!")
+    
+    def zap_pram(self, emulator_type: str):
+        """Delete PRAM/NVRAM file for the specified emulator."""
+        if emulator_type == 'basilisk':
+            cfg_path = self.basilisk_cfg.text()
+            pram_filename = '.basilisk_ii_xpram'
+        else:
+            cfg_path = self.sheepshaver_cfg.text()
+            pram_filename = '.sheepshaver_nvram'
+        
+        if not cfg_path:
+            QMessageBox.warning(self, "Zap PRAM", f"Please set {emulator_type} config file path first.")
+            return
+        
+        cfg_dir = os.path.dirname(cfg_path)
+        pram_path = os.path.join(cfg_dir, pram_filename)
+        
+        if not os.path.exists(pram_path):
+            QMessageBox.information(self, "Zap PRAM", f"PRAM file not found:\n{pram_path}")
+            return
+        
+        try:
+            os.remove(pram_path)
+            QMessageBox.information(self, "Zap PRAM", f"PRAM file deleted successfully:\n{pram_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to delete PRAM file:\n{e}")
 
 
 # ============================================================================
