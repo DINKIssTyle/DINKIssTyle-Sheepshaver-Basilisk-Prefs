@@ -1,3 +1,5 @@
 /venv
 /build
 *.spec
+/dist
+.DS_Store

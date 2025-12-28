@@ -1075,9 +1075,16 @@ class PrefsEditor(QMainWindow):
                 ConfigParser.save(cfg, config)
             
             # Launch emulator
-            args = [exe]
-            if cfg:
-                args.extend(['--config', cfg])
+            if sys.platform == 'darwin' and exe.endswith('.app'):
+                # Use 'open' command for macOS .app bundles
+                args = ['open', '-n', '-a', exe]
+                if cfg:
+                    args.extend(['--args', '--config', cfg])
+            else:
+                # Standard binary execution
+                args = [exe]
+                if cfg:
+                    args.extend(['--config', cfg])
             
             subprocess.Popen(args, start_new_session=True)
             
