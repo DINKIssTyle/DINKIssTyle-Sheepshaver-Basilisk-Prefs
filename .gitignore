@@ -5,3 +5,10 @@
 .DS_Store
 /.venv
 note
+/macemu
+__pycache__/
+*.pyc
+uv.lock
+.python-version
+.basilisk_ii_prefs
+.sheepshaver_prefs

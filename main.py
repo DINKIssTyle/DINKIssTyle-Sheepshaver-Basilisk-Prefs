@@ -16,7 +16,7 @@ from qtpy.QtWidgets import (
     QTabWidget, QLabel, QLineEdit, QPushButton, QSpinBox, QCheckBox,
     QComboBox, QListWidget, QListWidgetItem, QGroupBox, QFormLayout,
     QFileDialog, QMessageBox, QToolBar, QSplitter, QFrame, QDoubleSpinBox,
-    QSizePolicy
+    QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
 )
 from qtpy.QtCore import Qt, QSettings
 from qtpy.QtGui import QAction, QIcon, QPixmap
@@ -50,7 +50,9 @@ class ConfigParser:
                 
                 # Handle multiple disk entries
                 if key == 'disk':
-                    disks.append(value)
+                    disks.append((value, False))
+                elif key == '#disk':
+                    disks.append((value, True))
                 else:
                     # Convert boolean strings
                     if value.lower() == 'true':
@@ -74,8 +76,11 @@ class ConfigParser:
         """Save configuration dictionary to file."""
         with open(filepath, 'w') as f:
             # Write disks first
-            for disk in config.get('disks', []):
-                f.write(f"disk {disk}\n")
+            for disk, disabled in config.get('disks', []):
+                if disabled:
+                    f.write(f"#disk {disk}\n")
+                else:
+                    f.write(f"disk {disk}\n")
             
             # Write other settings
             for key, value in config.items():
@@ -105,9 +110,15 @@ class DrivesTab(QWidget):
         disk_group = QGroupBox("Disk Images")
         disk_layout = QVBoxLayout(disk_group)
         
-        self.disk_list = QListWidget()
-        self.disk_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
-        disk_layout.addWidget(self.disk_list)
+        self.disk_table = QTableWidget()
+        self.disk_table.setColumnCount(2)
+        self.disk_table.setHorizontalHeaderLabels(["Disk Image", "Disabled"])
+        self.disk_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.disk_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.disk_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.disk_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        # self.disk_table.setDragDropMode(QAbstractItemView.InternalMove) # Drag drop rows in TableWidget is complex, relying on buttons
+        disk_layout.addWidget(self.disk_table)
         
         btn_layout = QHBoxLayout()
         self.btn_add = QPushButton("Add")
@@ -172,26 +183,63 @@ class DrivesTab(QWidget):
             "", "Disk Images (*.img *.dmg *.iso *.hfv);;All Files (*)"
         )
         if path:
-            self.disk_list.addItem(path)
+            self._add_disk_row(path, False)
+            
+    def _add_disk_row(self, path, disabled):
+        row = self.disk_table.rowCount()
+        self.disk_table.insertRow(row)
+        
+        # Path item
+        path_item = QTableWidgetItem(path)
+        path_item.setFlags(path_item.flags() ^ Qt.ItemIsEditable) # Make read-only
+        self.disk_table.setItem(row, 0, path_item)
+        
+        # Checkbox item
+        # We use a cell widget or a checkstate. Using cell widget for better centering if needed, but checkstate is standard.
+        # Let's use QTableWidgetItem with checkstate for simplicity, but it's text+check. 
+        # Ideally we want a specialized column. 
+        # Let's use a widget for the disabled column to be explicit.
+        
+        chk = QCheckBox()
+        chk.setChecked(disabled)
+        # Center the checkbox
+        cell_widget = QWidget()
+        layout = QHBoxLayout(cell_widget)
+        layout.addWidget(chk)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.disk_table.setCellWidget(row, 1, cell_widget)
     
     def remove_disk(self):
-        row = self.disk_list.currentRow()
+        row = self.disk_table.currentRow()
         if row >= 0:
-            self.disk_list.takeItem(row)
+            self.disk_table.removeRow(row)
     
     def move_up(self):
-        row = self.disk_list.currentRow()
+        row = self.disk_table.currentRow()
         if row > 0:
-            item = self.disk_list.takeItem(row)
-            self.disk_list.insertItem(row - 1, item)
-            self.disk_list.setCurrentRow(row - 1)
+            self._swap_rows(row, row - 1)
+            self.disk_table.setCurrentCell(row - 1, 0)
     
     def move_down(self):
-        row = self.disk_list.currentRow()
-        if row < self.disk_list.count() - 1:
-            item = self.disk_list.takeItem(row)
-            self.disk_list.insertItem(row + 1, item)
-            self.disk_list.setCurrentRow(row + 1)
+        row = self.disk_table.currentRow()
+        if row < self.disk_table.rowCount() - 1 and row >= 0:
+            self._swap_rows(row, row + 1)
+            self.disk_table.setCurrentCell(row + 1, 0)
+            
+    def _swap_rows(self, row1, row2):
+        # Swap content
+        path1 = self.disk_table.item(row1, 0).text()
+        chk1 = self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).isChecked()
+        
+        path2 = self.disk_table.item(row2, 0).text()
+        chk2 = self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).isChecked()
+        
+        self.disk_table.item(row1, 0).setText(path2)
+        self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).setChecked(chk2)
+        
+        self.disk_table.item(row2, 0).setText(path1)
+        self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).setChecked(chk1)
     
     def browse_file(self, line_edit, filter_str):
         path, _ = QFileDialog.getOpenFileName(self, "Select File", "", filter_str)
@@ -204,9 +252,13 @@ class DrivesTab(QWidget):
             line_edit.setText(path)
     
     def load_config(self, config: dict):
-        self.disk_list.clear()
-        for disk in config.get('disks', []):
-            self.disk_list.addItem(disk)
+        self.disk_table.setRowCount(0)
+        for disk_entry in config.get('disks', []):
+            if isinstance(disk_entry, tuple):
+                path, disabled = disk_entry
+            else:
+                path, disabled = disk_entry, False
+            self._add_disk_row(path, disabled)
         self.extfs_edit.setText(str(config.get('extfs', '')))
         self.rom_edit.setText(str(config.get('rom', '')))
         self.boot_drive.setValue(config.get('bootdrive', 0))
@@ -214,7 +266,12 @@ class DrivesTab(QWidget):
         self.no_cdrom.setChecked(config.get('nocdrom', False))
     
     def save_config(self, config: dict):
-        config['disks'] = [self.disk_list.item(i).text() for i in range(self.disk_list.count())]
+        disks = []
+        for i in range(self.disk_table.rowCount()):
+            path = self.disk_table.item(i, 0).text()
+            disabled = self.disk_table.cellWidget(i, 1).findChild(QCheckBox).isChecked()
+            disks.append((path, disabled))
+        config['disks'] = disks
         config['extfs'] = self.extfs_edit.text()
         config['rom'] = self.rom_edit.text()
         config['bootdrive'] = self.boot_drive.value()
@@ -485,8 +542,18 @@ class CpuMemoryTab(QWidget):
             self.cpu_type.addItems(["68020", "68030", "68040"])
             cpu_layout.addRow("CPU Type:", self.cpu_type)
             
-            self.model_id = QSpinBox()
-            self.model_id.setRange(0, 255)
+            self.model_id = QComboBox()
+            models = [
+                ("Mac IIci (Default)", 5),
+                ("Mac IIfx", 6),
+                ("Quadra 700", 12),
+                ("Quadra 800", 23),
+                ("Quadra 650", 24),
+                ("Quadra 900", 14),
+                ("Quadra 950", 16)
+            ]
+            for name, mid in models:
+                self.model_id.addItem(name, mid)
             cpu_layout.addRow("Model ID:", self.model_id)
             
             self.fpu_enabled = QCheckBox("Enable FPU")
@@ -548,7 +615,14 @@ class CpuMemoryTab(QWidget):
             cpu = config.get('cpu', 3)
             cpu_map = {2: 0, 3: 1, 4: 2}
             self.cpu_type.setCurrentIndex(cpu_map.get(cpu, 1))
-            self.model_id.setValue(config.get('modelid', 5))
+            
+            model_val = config.get('modelid', 5)
+            index = self.model_id.findData(model_val)
+            if index >= 0:
+                self.model_id.setCurrentIndex(index)
+            else:
+                self.model_id.setCurrentIndex(0) # Default to first item (IIci)
+                
             self.fpu_enabled.setChecked(config.get('fpu', True))
             self.jit_fpu.setChecked(config.get('jitfpu', True))
             self.jit_cache_size.setValue(config.get('jitcachesize', 8192))
@@ -568,7 +642,7 @@ class CpuMemoryTab(QWidget):
         if self.emulator_type == 'basilisk':
             cpu_map = {0: 2, 1: 3, 2: 4}
             config['cpu'] = cpu_map.get(self.cpu_type.currentIndex(), 3)
-            config['modelid'] = self.model_id.value()
+            config['modelid'] = self.model_id.currentData()
             config['fpu'] = self.fpu_enabled.isChecked()
             config['jitfpu'] = self.jit_fpu.isChecked()
             config['jitcachesize'] = self.jit_cache_size.value()
@@ -595,11 +669,19 @@ class InputTab(QWidget):
         layout = QVBoxLayout(self)
         
         # Keyboard Group
-        kb_group = QGroupBox("Keyboard")
-        kb_layout = QFormLayout(kb_group)
+        km_group = QGroupBox("Keyboard")
+        kb_layout = QFormLayout(km_group)
         
-        self.kb_type = QSpinBox()
-        self.kb_type.setRange(0, 255)
+        self.kb_type = QComboBox()
+        kb_types = [
+            ("Apple Extended Keyboard II (5) - Default", 5),
+            ("Macintosh Plus (11)", 11),
+            ("PowerBook (13)", 13),
+            ("Mac Standard (2)", 2),
+            ("Unknown (0)", 0)
+        ]
+        for name, val in kb_types:
+            self.kb_type.addItem(name, val)
         kb_layout.addRow("Keyboard Type:", self.kb_type)
         
         self.keycodes = QCheckBox("Use Keycodes")
@@ -613,14 +695,24 @@ class InputTab(QWidget):
         keycode_layout.addWidget(keycode_btn)
         kb_layout.addRow("Keycode File:", keycode_layout)
         
-        self.hotkey = QSpinBox()
-        self.hotkey.setRange(0, 255)
+        self.hotkey = QComboBox()
+        hotkeys = [
+            ("Control (Default)", 1),
+            ("Option", 2),
+            ("Control+Option", 3),
+            ("Command", 4),
+            ("Control+Command", 5),
+            ("Option+Command", 6),
+            ("Control+Option+Command", 7)
+        ]
+        for name, val in hotkeys:
+            self.hotkey.addItem(name, val)
         kb_layout.addRow("Hotkey:", self.hotkey)
         
         self.swap_opt_cmd = QCheckBox("Swap Option/Command")
         kb_layout.addRow("", self.swap_opt_cmd)
         
-        layout.addWidget(kb_group)
+        layout.addWidget(km_group)
         
         # Mouse Group
         mouse_group = QGroupBox("Mouse")
@@ -650,10 +742,28 @@ class InputTab(QWidget):
             self.keycode_file.setText(path)
     
     def load_config(self, config: dict):
-        self.kb_type.setValue(config.get('keyboardtype', 5))
+        kb_val = config.get('keyboardtype', 5)
+        index = self.kb_type.findData(kb_val)
+        if index >= 0:
+            self.kb_type.setCurrentIndex(index)
+        else:
+            # Add custom value dynamically
+            self.kb_type.addItem(f"Custom ({kb_val})", kb_val)
+            self.kb_type.setCurrentIndex(self.kb_type.count() - 1)
+            
         self.keycodes.setChecked(config.get('keycodes', True))
         self.keycode_file.setText(str(config.get('keycodefile', '')))
-        self.hotkey.setValue(config.get('hotkey', 0))
+        
+        hotkey_val = config.get('hotkey', 1)
+        # Handle 0 as default (1) or just fallback
+        if hotkey_val == 0: hotkey_val = 1
+            
+        index = self.hotkey.findData(hotkey_val)
+        if index >= 0:
+            self.hotkey.setCurrentIndex(index)
+        else:
+            self.hotkey.setCurrentIndex(0) # Default to Control (1)
+            
         self.swap_opt_cmd.setChecked(config.get('swap_opt_cmd', True))
         self.mouse_wheel_mode.setValue(config.get('mousewheelmode', 1))
         self.mouse_wheel_lines.setValue(config.get('mousewheellines', 3))
@@ -662,10 +772,10 @@ class InputTab(QWidget):
             self.hard_cursor.setChecked(config.get('hardcursor', False))
     
     def save_config(self, config: dict):
-        config['keyboardtype'] = self.kb_type.value()
+        config['keyboardtype'] = self.kb_type.currentData()
         config['keycodes'] = self.keycodes.isChecked()
         config['keycodefile'] = self.keycode_file.text()
-        config['hotkey'] = self.hotkey.value()
+        config['hotkey'] = self.hotkey.currentData()
         config['swap_opt_cmd'] = self.swap_opt_cmd.isChecked()
         config['mousewheelmode'] = self.mouse_wheel_mode.value()
         config['mousewheellines'] = self.mouse_wheel_lines.value()
@@ -769,8 +879,21 @@ class MiscTab(QWidget):
         enc_group = QGroupBox("Encoding")
         enc_layout = QFormLayout(enc_group)
         
-        self.name_encoding = QSpinBox()
-        self.name_encoding.setRange(0, 10)
+        self.name_encoding = QComboBox()
+        encodings = [
+            ("Auto/MacRoman (Default)", 0),
+            ("Japanese", 1),
+            ("Chinese Traditional", 2),
+            ("Korean", 3),
+            ("Arabic", 4),
+            ("Hebrew", 5),
+            ("Greek", 6),
+            ("Cyrillic", 7),
+            ("Chinese Simplified", 25)
+        ]
+        for name, value in encodings:
+            self.name_encoding.addItem(name, value)
+            
         enc_layout.addRow("Name Encoding:", self.name_encoding)
         
         layout.addWidget(enc_group)
@@ -797,7 +920,13 @@ class MiscTab(QWidget):
         self.idle_wait.setChecked(config.get('idlewait', True))
         self.year_offset.setValue(config.get('yearofs', 0))
         self.day_offset.setValue(config.get('dayofs', 0))
-        self.name_encoding.setValue(config.get('name_encoding', 3))
+        
+        encoding_val = config.get('name_encoding', 0)
+        index = self.name_encoding.findData(encoding_val)
+        if index >= 0:
+            self.name_encoding.setCurrentIndex(index)
+        else:
+            self.name_encoding.setCurrentIndex(0) # Default to first item if not found
         if self.emulator_type == 'basilisk':
             self.delay.setValue(config.get('delay', 0))
     
@@ -813,7 +942,7 @@ class MiscTab(QWidget):
         config['idlewait'] = self.idle_wait.isChecked()
         config['yearofs'] = self.year_offset.value()
         config['dayofs'] = self.day_offset.value()
-        config['name_encoding'] = self.name_encoding.value()
+        config['name_encoding'] = self.name_encoding.currentData()
         if self.emulator_type == 'basilisk':
             config['delay'] = self.delay.value()
 
