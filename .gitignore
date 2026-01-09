@@ -6,6 +6,7 @@
 /.venv
 note
 /macemu
+/snow
 __pycache__/
 *.pyc
 uv.lock

@@ -111,6 +111,8 @@ TRANSLATIONS = {
         'scaling': 'Scaling',
         'nearest_neighbor': 'Nearest Neighbor',
         'integer_scaling': 'Integer Scaling',
+        'shader_list': 'Shaders',
+        'shader_file': 'Shader File',
         # Sound Tab
         'audio': 'Audio',
         'audio_output': 'Audio Output:',
@@ -223,6 +225,8 @@ TRANSLATIONS = {
         'scaling': '스케일링',
         'nearest_neighbor': 'Nearest Neighbor',
         'integer_scaling': '정수 스케일링',
+        'shader_list': '쉐이더 목록',
+        'shader_file': '쉐이더 파일',
         'audio': '오디오',
         'audio_output': '오디오 출력:',
         'disable_sound': '사운드 비활성화',
@@ -326,6 +330,8 @@ TRANSLATIONS = {
         'scaling': '缩放',
         'nearest_neighbor': '最近邻',
         'integer_scaling': '整数缩放',
+        'shader_list': '着色器',
+        'shader_file': '着色器文件',
         'audio': '音频',
         'audio_output': '音频输出:',
         'disable_sound': '禁用声音',
@@ -429,6 +435,8 @@ TRANSLATIONS = {
         'scaling': 'スケーリング',
         'nearest_neighbor': 'ニアレストネイバー',
         'integer_scaling': '整数スケーリング',
+        'shader_list': 'シェーダー',
+        'shader_file': 'シェーダーファイル',
         'audio': 'オーディオ',
         'audio_output': 'オーディオ出力:',
         'disable_sound': 'サウンドを無効にする',
@@ -532,6 +540,8 @@ TRANSLATIONS = {
         'scaling': 'Escalado',
         'nearest_neighbor': 'Vecino más Cercano',
         'integer_scaling': 'Escalado Entero',
+        'shader_list': 'Shaders',
+        'shader_file': 'Archivo de Shader',
         'audio': 'Audio',
         'audio_output': 'Salida de Audio:',
         'disable_sound': 'Deshabilitar Sonido',
@@ -625,6 +635,7 @@ class ConfigParser:
         """Parse a configuration file into a dictionary."""
         config = {}
         disks = []
+        shaders = []
         
         if not os.path.exists(filepath):
             return config
@@ -644,6 +655,11 @@ class ConfigParser:
                     disks.append((value, False))
                 elif key == '#disk':
                     disks.append((value, True))
+                # Handle multiple shader entries
+                elif key == 'shader':
+                    shaders.append((value, False))
+                elif key == '#shader':
+                    shaders.append((value, True))
                 # Handle #model comment for model selection
                 elif key == '#model':
                     config['model'] = value
@@ -663,22 +679,30 @@ class ConfigParser:
                     config[key] = value
         
         config['disks'] = disks
+        config['shaders'] = shaders
         return config
     
     @staticmethod
     def save(filepath: str, config: dict):
         """Save configuration dictionary to file."""
         with open(filepath, 'w') as f:
-            # Write disks first
+            # Write disks
             for disk, disabled in config.get('disks', []):
                 if disabled:
                     f.write(f"#disk {disk}\n")
                 else:
                     f.write(f"disk {disk}\n")
+
+            # Write shaders
+            for shader, disabled in config.get('shaders', []):
+                if disabled:
+                    f.write(f"#shader {shader}\n")
+                else:
+                    f.write(f"shader {shader}\n")
             
             # Write other settings
             for key, value in config.items():
-                if key == 'disks':
+                if key in ['disks', 'shaders']:
                     continue
                 # Save model as comment
                 if key == 'model':
@@ -970,7 +994,100 @@ class GraphicsTab(QWidget):
         scale_layout.addWidget(self.mag_rate, 1, 1)
         
         layout.addWidget(scale_group)
+        
+        # Shader Group
+        shader_group = QGroupBox(tr('shader_list'))
+        shader_layout = QVBoxLayout(shader_group)
+        
+        self.shader_table = QTableWidget()
+        self.shader_table.setColumnCount(2)
+        self.shader_table.setHorizontalHeaderLabels([tr('path'), tr('disabled')])
+        self.shader_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.shader_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.shader_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.shader_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        shader_layout.addWidget(self.shader_table)
+        
+        # Shader Buttons
+        btn_layout = QHBoxLayout()
+        
+        add_btn = QPushButton(tr('add'))
+        add_btn.clicked.connect(self.add_shader)
+        
+        remove_btn = QPushButton(tr('remove'))
+        remove_btn.clicked.connect(self.remove_shader)
+        
+        up_btn = QPushButton(tr('up'))
+        up_btn.clicked.connect(self.move_up)
+        
+        down_btn = QPushButton(tr('down'))
+        down_btn.clicked.connect(self.move_down)
+        
+        btn_layout.addWidget(add_btn)
+        btn_layout.addWidget(remove_btn)
+        btn_layout.addWidget(up_btn)
+        btn_layout.addWidget(down_btn)
+        
+        shader_layout.addLayout(btn_layout)
+        layout.addWidget(shader_group)
+
         layout.addStretch()
+
+    def add_shader(self):
+        path, _ = QFileDialog.getOpenFileName(self, tr('shader_file'), "", "GLSL Files (*.glsl);;All Files (*)")
+        if path:
+            self._add_shader_row(path, False)
+    
+    def _add_shader_row(self, path, disabled):
+        row = self.shader_table.rowCount()
+        self.shader_table.insertRow(row)
+        
+        # Path item
+        path_item = QTableWidgetItem(path)
+        path_item.setFlags(path_item.flags() ^ Qt.ItemIsEditable) # Make read-only
+        self.shader_table.setItem(row, 0, path_item)
+        
+        # Checkbox item
+        chk = QCheckBox()
+        chk.setChecked(disabled)
+        # Center the checkbox
+        cell_widget = QWidget()
+        layout = QHBoxLayout(cell_widget)
+        layout.addWidget(chk)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.shader_table.setCellWidget(row, 1, cell_widget)
+    
+    def remove_shader(self):
+        row = self.shader_table.currentRow()
+        if row >= 0:
+            self.shader_table.removeRow(row)
+    
+    def move_up(self):
+        row = self.shader_table.currentRow()
+        if row > 0:
+            self._swap_rows(row, row - 1)
+            self.shader_table.setCurrentCell(row - 1, 0)
+    
+    def move_down(self):
+        row = self.shader_table.currentRow()
+        if row < self.shader_table.rowCount() - 1 and row >= 0:
+            self._swap_rows(row, row + 1)
+            self.shader_table.setCurrentCell(row + 1, 0)
+            
+    def _swap_rows(self, row1, row2):
+        # Swap content
+        path1 = self.shader_table.item(row1, 0).text()
+        chk1 = self.shader_table.cellWidget(row1, 1).findChild(QCheckBox).isChecked()
+        
+        path2 = self.shader_table.item(row2, 0).text()
+        chk2 = self.shader_table.cellWidget(row2, 1).findChild(QCheckBox).isChecked()
+        
+        self.shader_table.item(row1, 0).setText(path2)
+        self.shader_table.cellWidget(row1, 1).findChild(QCheckBox).setChecked(chk2)
+        
+        self.shader_table.item(row2, 0).setText(path1)
+        self.shader_table.cellWidget(row2, 1).findChild(QCheckBox).setChecked(chk1)
     
     def load_config(self, config: dict):
         screen = str(config.get('screen', 'win/800/600'))
@@ -1002,6 +1119,15 @@ class GraphicsTab(QWidget):
         
         self.mag_rate.setValue(float(config.get('mag_rate', 1.0)))
         self.sdl_render.setCurrentText(config.get('sdlrender', 'software'))
+        
+        # Load shaders
+        self.shader_table.setRowCount(0)
+        for shader_entry in config.get('shaders', []):
+            if isinstance(shader_entry, tuple):
+                path, disabled = shader_entry
+            else:
+                path, disabled = shader_entry, False
+            self._add_shader_row(path, disabled)
     
     def save_config(self, config: dict):
         config['screen'] = f"{self.screen_mode.currentText()}/{self.screen_width.value()}/{self.screen_height.value()}"
@@ -1016,6 +1142,14 @@ class GraphicsTab(QWidget):
         config['scale_integer'] = self.scale_integer.isChecked()
         config['mag_rate'] = self.mag_rate.value()
         config['sdlrender'] = self.sdl_render.currentText()
+        
+        # Save shaders
+        shaders = []
+        for i in range(self.shader_table.rowCount()):
+            path = self.shader_table.item(i, 0).text()
+            disabled = self.shader_table.cellWidget(i, 1).findChild(QCheckBox).isChecked()
+            shaders.append((path, disabled))
+        config['shaders'] = shaders
 
 
 class SoundTab(QWidget):
