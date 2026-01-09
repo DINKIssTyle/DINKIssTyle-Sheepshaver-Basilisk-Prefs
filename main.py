@@ -976,6 +976,7 @@ class InputSerialTab(QWidget):
         
         # Content widget
         content = QWidget()
+        content.setStyleSheet(f"background-color: {LEFT_PANEL_CONFIG['content_background_color']};")
         layout = QVBoxLayout(content)
         layout.setSpacing(10)
         
