@@ -45,6 +45,7 @@ LEFT_PANEL_CONFIG = {
     'row2_align': 'top',
     'title_font_size': 16,
     'title_max_width': 190,
+    'title_color': '#333333',  # Title text color
     
     # Row 3: Power Button (fixed height)
     'row3_height': 190,  # px, 0 = auto
@@ -57,6 +58,9 @@ LEFT_PANEL_CONFIG = {
     'row4_align': 'bottom',
     'row4_padding_bottom': 10,
     'action_btn_spacing': 10,
+    
+    # Left panel background color (set to None to use system default)
+    'panel_background_color': '#FFFFFF',
 }
 
 
@@ -573,17 +577,7 @@ class GraphicsSoundTab(QWidget):
         self.init_ui()
     
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Create scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        # Content widget
-        content = QWidget()
-        layout = QVBoxLayout(content)
+        layout = QVBoxLayout(self)
         layout.setSpacing(10)
         
         # Add Graphics settings
@@ -593,9 +587,6 @@ class GraphicsSoundTab(QWidget):
         layout.addWidget(self.sound_tab)
         
         layout.addStretch()
-        
-        scroll.setWidget(content)
-        main_layout.addWidget(scroll)
     
     def load_config(self, config: dict):
         self.graphics_tab.load_config(config)
@@ -962,17 +953,7 @@ class InputSerialTab(QWidget):
         self.init_ui()
     
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Create scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        # Content widget
-        content = QWidget()
-        layout = QVBoxLayout(content)
+        layout = QVBoxLayout(self)
         layout.setSpacing(10)
         
         # Add Input settings
@@ -982,9 +963,6 @@ class InputSerialTab(QWidget):
         layout.addWidget(self.serial_tab)
         
         layout.addStretch()
-        
-        scroll.setWidget(content)
-        main_layout.addWidget(scroll)
     
     def load_config(self, config: dict):
         self.input_tab.load_config(config)
@@ -1233,6 +1211,13 @@ class LeftPanel(QWidget):
     def init_ui(self):
         cfg = LEFT_PANEL_CONFIG
         
+        # Set panel background color if specified
+        if cfg.get('panel_background_color'):
+            self.setAutoFillBackground(True)
+            panel_palette = self.palette()
+            panel_palette.setColor(self.backgroundRole(), QColor(cfg['panel_background_color']))
+            self.setPalette(panel_palette)
+        
         # Main layout - no spacing between rows
         layout = QVBoxLayout(self)
         layout.setSpacing(0)
@@ -1283,6 +1268,7 @@ class LeftPanel(QWidget):
             QLabel {{
                 font-size: {cfg['title_font_size']}px;
                 font-weight: bold;
+                color: {cfg['title_color']};
             }}
         """)
         self.title_label.setWordWrap(False)
