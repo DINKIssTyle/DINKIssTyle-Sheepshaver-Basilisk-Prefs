@@ -30,7 +30,7 @@ pip install qtpy PyQt6 pyinstaller
 echo "Building executable..."
 pyinstaller --noconfirm --onefile --windowed \
     --name "EmulatorPrefs" \
-    --add-data "Appicon.png:." \
+    --add-data "res:res" \
     main.py
 
 echo ""

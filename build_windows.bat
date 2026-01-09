@@ -26,25 +26,25 @@ pip install --upgrade pip
 pip install qtpy PyQt6 pyinstaller pillow
 
 REM Convert PNG to ICO if needed
-if exist "Appicon.png" (
-    if not exist "Appicon.ico" (
+if exist "res\Appicon.png" (
+    if not exist "res\Appicon.ico" (
         echo Converting icon to ICO format...
-        python -c "from PIL import Image; img = Image.open('Appicon.png'); img.save('Appicon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])"
+        python -c "from PIL import Image; img = Image.open('res/Appicon.png'); img.save('res/Appicon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])"
     )
 )
 
 REM Build with PyInstaller (no console, with icon)
 echo Building executable...
-if exist "Appicon.ico" (
+if exist "res\Appicon.ico" (
     pyinstaller --noconfirm --onefile --windowed ^
         --name "EmulatorPrefs" ^
-        --icon "Appicon.ico" ^
-        --add-data "Appicon.png;." ^
+        --icon "res\Appicon.ico" ^
+        --add-data "res;res" ^
         main.py
 ) else (
     pyinstaller --noconfirm --onefile --windowed ^
         --name "EmulatorPrefs" ^
-        --add-data "Appicon.png;." ^
+        --add-data "res;res" ^
         main.py
 )
 
