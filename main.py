@@ -24,6 +24,47 @@ from qtpy.QtGui import QAction, QIcon, QPixmap
 
 
 # ============================================================================
+# Left Panel Layout Configuration
+# ============================================================================
+
+LEFT_PANEL_CONFIG = {
+    # Overall panel settings
+    'panel_width': 230,
+    'panel_margin_top': 10,
+    'panel_margin_bottom': 10,
+    'panel_margin_left': 10,
+    'panel_margin_right': 10,
+    
+    # Row 1: Icon (fixed height)
+    'row1_height': 200,  # px, 0 = auto
+    'row1_align': 'center',  # top, center, bottom
+    'icon_size': 190,
+    
+    # Row 2: Title (fixed height)
+    'row2_height': 60,  # px, 0 = auto
+    'row2_align': 'top',
+    'title_font_size': 16,
+    'title_max_width': 190,
+    
+    # Row 3: Power Button (fixed height)
+    'row3_height': 190,  # px, 0 = auto
+    'row3_align': 'center',
+    'power_btn_width': 190,
+    'power_btn_height': 190,
+    
+    # Row 4: Action Buttons (stretch to fill remaining, align bottom)
+    'row4_height': 0,  # 0 = stretch
+    'row4_align': 'bottom',
+    'row4_padding_bottom': 10,
+    'action_btn_spacing': 10,
+    
+    # Colors
+    'panel_background_color': '#FFFFFF',
+    'content_background_color': '#FFFFFF',
+}
+
+
+# ============================================================================
 # Configuration Parser
 # ============================================================================
 
@@ -125,6 +166,7 @@ class DrivesTab(QWidget):
         self.disk_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.disk_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.disk_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.disk_table.verticalHeader().setFixedWidth(25)  # Make numbering column wider
         # self.disk_table.setDragDropMode(QAbstractItemView.InternalMove) # Drag drop rows in TableWidget is complex, relying on buttons
         disk_layout.addWidget(self.disk_table)
 
@@ -739,6 +781,7 @@ class InputTab(QWidget):
     
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         
         # Keyboard Group
         km_group = QGroupBox("Keyboard")
@@ -880,6 +923,7 @@ class SerialTab(QWidget):
     
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         
         # Serial Ports - 2 column layout
         serial_group = QGroupBox("Serial Ports")
@@ -1191,49 +1235,93 @@ class LeftPanel(QWidget):
         self.init_ui()
     
     def init_ui(self):
+        cfg = LEFT_PANEL_CONFIG
+        
+        # Set panel background color
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet(f"background-color: {cfg['panel_background_color']};")
+        
+        # Main layout - no spacing between rows
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
-        layout.setSpacing(15)
+        layout.setSpacing(0)
+        layout.setContentsMargins(
+            cfg['panel_margin_left'],
+            cfg['panel_margin_top'],
+            cfg['panel_margin_right'],
+            cfg['panel_margin_bottom']
+        )
         
-        # Icon Area (512x512 frame)
-        self.icon_frame = QFrame()
-        self.icon_frame.setFixedSize(220, 220)
-        self.icon_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f0f0f0;
-                border: 2px solid #c0c0c0;
-                border-radius: 5px;
-            }
-        """)
-        
-        icon_layout = QVBoxLayout(self.icon_frame)
-        icon_layout.setAlignment(Qt.AlignCenter)
+        # ==================== Row 1: Icon ====================
+        row1 = QWidget()
+        row1_layout = QVBoxLayout(row1)
+        row1_layout.setContentsMargins(0, 0, 0, 0)
+        row1_layout.setSpacing(0)
         
         self.icon_label = QLabel()
-        self.icon_label.setFixedSize(200, 200)
+        self.icon_label.setFixedSize(cfg['icon_size'], cfg['icon_size'])
         self.icon_label.setAlignment(Qt.AlignCenter)
         self.icon_label.setStyleSheet("border: none; background: transparent;")
-        icon_layout.addWidget(self.icon_label)
         
-        layout.addWidget(self.icon_frame)
+        # Alignment for row 1
+        align = Qt.AlignHCenter
+        if cfg['row1_align'] == 'top':
+            align |= Qt.AlignTop
+        elif cfg['row1_align'] == 'bottom':
+            align |= Qt.AlignBottom
+        else:
+            align |= Qt.AlignVCenter
+            
+        row1_layout.addWidget(self.icon_label, alignment=align)
         
-        # Title Label
+        if cfg['row1_height'] > 0:
+            row1.setFixedHeight(cfg['row1_height'])
+            layout.addWidget(row1)
+        else:
+            layout.addWidget(row1, 1)
+
+        # ==================== Row 2: Title ====================
+        row2 = QWidget()
+        row2_layout = QVBoxLayout(row2)
+        row2_layout.setContentsMargins(0, 0, 0, 0)
+        row2_layout.setSpacing(0)
+        
         self.title_label = QLabel(self._get_default_title())
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("""
-            QLabel {
-                font-size: 16px;
+        self.title_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {cfg['title_font_size']}px;
                 font-weight: bold;
                 color: #333;
-            }
+            }}
         """)
-        self.title_label.setWordWrap(True)
-        self.title_label.setMaximumWidth(220)
-        layout.addWidget(self.title_label)
+        self.title_label.setWordWrap(False)
+        self.title_label.setMaximumWidth(cfg['title_max_width'])
         
-        # Power Button
+        # Alignment for row 2
+        align = Qt.AlignHCenter
+        if cfg['row2_align'] == 'top':
+            align |= Qt.AlignTop
+        elif cfg['row2_align'] == 'bottom':
+            align |= Qt.AlignBottom
+        else:
+            align |= Qt.AlignVCenter
+            
+        row2_layout.addWidget(self.title_label, alignment=align)
+        
+        if cfg['row2_height'] > 0:
+            row2.setFixedHeight(cfg['row2_height'])
+            layout.addWidget(row2)
+        else:
+            layout.addWidget(row2, 1)
+        
+        # ==================== Row 3: Power Button ====================
+        row3 = QWidget()
+        row3_layout = QVBoxLayout(row3)
+        row3_layout.setContentsMargins(0, 0, 0, 0)
+        row3_layout.setSpacing(0)
+        
         self.power_btn = ClickableLabel()
-        self.power_btn.setFixedSize(120, 100)
+        self.power_btn.setFixedSize(cfg['power_btn_width'], cfg['power_btn_height'])
         self.power_btn.setAlignment(Qt.AlignCenter)
         self.power_btn.setCursor(Qt.PointingHandCursor)
         self.power_btn.setToolTip("Click to launch emulator")
@@ -1245,7 +1333,7 @@ class LeftPanel(QWidget):
         if os.path.exists(power_img_path):
             pixmap = QPixmap(power_img_path)
             if not pixmap.isNull():
-                pixmap = pixmap.scaled(120, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap = pixmap.scaled(cfg['power_btn_width'], cfg['power_btn_height'], Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.power_btn.setPixmap(pixmap)
         else:
             self.power_btn.setText("⏻ Start")
@@ -1262,38 +1350,41 @@ class LeftPanel(QWidget):
             """)
         
         self.power_btn.clicked.connect(self.power_clicked.emit)
-        layout.addWidget(self.power_btn, alignment=Qt.AlignCenter)
         
-        # Save and Reload buttons
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(10)
+        # Alignment for row 3
+        align = Qt.AlignHCenter
+        if cfg['row3_align'] == 'top':
+            align |= Qt.AlignTop
+        elif cfg['row3_align'] == 'bottom':
+            align |= Qt.AlignBottom
+        else:
+            align |= Qt.AlignVCenter
+            
+        row3_layout.addWidget(self.power_btn, alignment=align)
         
-        res_path = os.path.join(os.path.dirname(__file__), 'res')
+        if cfg['row3_height'] > 0:
+            row3.setFixedHeight(cfg['row3_height'])
+            layout.addWidget(row3)
+        else:
+            layout.addWidget(row3, 1)
         
-        self.save_btn = QPushButton()
-        save_icon_path = os.path.join(res_path, 'save.png')
-        if os.path.exists(save_icon_path):
-            self.save_btn.setIcon(QIcon(save_icon_path))
-        self.save_btn.setText("Save All")
-        self.save_btn.setCursor(Qt.PointingHandCursor)
-        self.save_btn.clicked.connect(self.save_clicked.emit)
-        btn_layout.addWidget(self.save_btn)
+        # ==================== Row 4: Action Buttons (stretch) ====================
+        row4 = QWidget()
+        row4_layout = QVBoxLayout(row4)
+        row4_layout.setContentsMargins(0, 0, 0, cfg['row4_padding_bottom'])
+        row4_layout.setSpacing(0)
         
-        self.reload_btn = QPushButton()
-        reload_icon_path = os.path.join(res_path, 'reload.png')
-        if os.path.exists(reload_icon_path):
-            self.reload_btn.setIcon(QIcon(reload_icon_path))
-        self.reload_btn.setText("Reload")
-        self.reload_btn.setCursor(Qt.PointingHandCursor)
-        self.reload_btn.clicked.connect(self.reload_clicked.emit)
-        btn_layout.addWidget(self.reload_btn)
-        
-        layout.addLayout(btn_layout)
-        
-        layout.addStretch()
+        # ==================== Row 4: Spacer (stretch) ====================
+        row4 = QWidget()
+        # Row 4 stretches to fill remaining space
+        if cfg['row4_height'] > 0:
+            row4.setFixedHeight(cfg['row4_height'])
+            layout.addWidget(row4)
+        else:
+            layout.addWidget(row4, 1)
         
         # Set fixed width for left panel
-        self.setFixedWidth(250)
+        self.setFixedWidth(cfg['panel_width'])
     
     def _get_default_title(self):
         if self.emulator_type == 'basilisk':
@@ -1313,7 +1404,8 @@ class LeftPanel(QWidget):
         if icon_path and os.path.exists(icon_path):
             pixmap = QPixmap(icon_path)
             if not pixmap.isNull():
-                pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                size = LEFT_PANEL_CONFIG['icon_size']
+                pixmap = pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.icon_label.setPixmap(pixmap)
     
     def set_model_icon(self, image_name: str):
@@ -1323,7 +1415,8 @@ class LeftPanel(QWidget):
         if os.path.exists(model_path):
             pixmap = QPixmap(model_path)
             if not pixmap.isNull():
-                pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                size = LEFT_PANEL_CONFIG['icon_size']
+                pixmap = pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.icon_label.setPixmap(pixmap)
         else:
             # Clear the icon if not found
@@ -1355,8 +1448,6 @@ class EmulatorTab(QWidget):
         # Left Panel
         self.left_panel = LeftPanel(self.emulator_type)
         self.left_panel.power_clicked.connect(self.launch_requested.emit)
-        self.left_panel.save_clicked.connect(self.save_requested.emit)
-        self.left_panel.reload_clicked.connect(self.reload_requested.emit)
         main_layout.addWidget(self.left_panel)
         
         # Right Panel (sub-tabs)
@@ -1365,6 +1456,30 @@ class EmulatorTab(QWidget):
         right_layout.setContentsMargins(0, 0, 0, 0)
         
         self.sub_tabs = QTabWidget()
+        self.sub_tabs.setStyleSheet(f"""
+            QTabWidget::pane {{
+                background-color: {LEFT_PANEL_CONFIG['content_background_color']};
+                border: 1px solid #C0C0C0;
+            }}
+            QTabBar::tab {{
+                background-color: #E0E0E0;
+                border: 1px solid #A0A0A0;
+                padding: 6px;
+                min-width: 30px;
+                min-height: 20px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-right: 2px;
+                qproperty-iconSize: 24px 24px;
+            }}
+            QTabBar::tab:selected {{
+                background-color: {LEFT_PANEL_CONFIG['content_background_color']};
+                border-bottom-color: {LEFT_PANEL_CONFIG['content_background_color']};
+            }}
+            QTabBar::tab:!selected {{
+                margin-top: 2px;
+            }}
+        """)
         
         # Create tabs
         self.drives_tab = DrivesTab(self.emulator_type)
@@ -1585,7 +1700,7 @@ class PrefsEditor(QMainWindow):
         
         # Main tabs
         self.main_tabs = QTabWidget()
-        self.main_tabs.setIconSize(QSize(16, 16))
+        self.main_tabs.setIconSize(QSize(24, 24))  # Increase icon size to ensure tab height ensures button fit while keeping native style
         self.setCentralWidget(self.main_tabs)
         
         self.basilisk_tab = EmulatorTab('basilisk')
@@ -1607,13 +1722,40 @@ class PrefsEditor(QMainWindow):
         self.main_tabs.addTab(self.settings_tab, get_icon("settings.png"), "Settings")
         
         # About button in top-right corner of tab bar
-        about_btn = QPushButton()
+        # Top-right corner buttons: Save All, Reload, About
+        top_right_widget = QWidget()
+        top_right_layout = QHBoxLayout(top_right_widget)
+        top_right_layout.setAlignment(Qt.AlignVCenter)
+        top_right_layout.setContentsMargins(0, 2, 2, 2)
+        top_right_layout.setSpacing(2)
+        
+        btn_height = 26
+        
+        # Save All Button
+        save_btn = QPushButton("Save All")
+        save_btn.setIcon(get_icon("save.png"))
+        save_btn.setCursor(Qt.PointingHandCursor)
+        save_btn.setFixedHeight(btn_height)
+        save_btn.clicked.connect(self.save_all_configs)
+        top_right_layout.addWidget(save_btn)
+        
+        # Reload Button
+        reload_btn = QPushButton("Reload")
+        reload_btn.setIcon(get_icon("reload.png"))
+        reload_btn.setCursor(Qt.PointingHandCursor)
+        reload_btn.setFixedHeight(btn_height)
+        reload_btn.clicked.connect(self.load_configs)
+        top_right_layout.addWidget(reload_btn)
+        
+        # About Button
+        about_btn = QPushButton("About")
         about_btn.setIcon(get_icon("about.png"))
-        about_btn.setText("About")
-        about_btn.setFlat(True)
         about_btn.setCursor(Qt.PointingHandCursor)
+        about_btn.setFixedHeight(btn_height)
         about_btn.clicked.connect(self.show_about)
-        self.main_tabs.setCornerWidget(about_btn, Qt.TopRightCorner)
+        top_right_layout.addWidget(about_btn)
+        
+        self.main_tabs.setCornerWidget(top_right_widget, Qt.TopRightCorner)
     
     def load_configs(self):
         """Load configuration files."""
@@ -1640,7 +1782,10 @@ class PrefsEditor(QMainWindow):
                 config = self.sheepshaver_tab.save_config()
                 ConfigParser.save(sheepshaver_cfg, config)
             
-            QMessageBox.information(self, "Save", "Configurations saved successfully!")
+            # Reload configurations to reflect changes
+            self.load_configs()
+            
+            QMessageBox.information(self, "Save", "Configuration saved and reloaded successfully!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save configurations:\n{e}")
     
@@ -1717,12 +1862,12 @@ class PrefsEditor(QMainWindow):
         layout.addWidget(name_label)
         
         # Version
-        version_label = QLabel("Version 1.0")
+        version_label = QLabel("Version 2.0")
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
         
         # Copyright
-        copyright_label = QLabel("© 2025 DINKI'ssTyle")
+        copyright_label = QLabel("© 2026 DINKI'ssTyle")
         copyright_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(copyright_label)
         
