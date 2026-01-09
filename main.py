@@ -17,7 +17,7 @@ from qtpy.QtWidgets import (
     QComboBox, QListWidget, QListWidgetItem, QGroupBox, QFormLayout,
     QFileDialog, QMessageBox, QToolBar, QSplitter, QFrame, QDoubleSpinBox,
     QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QScrollArea, QGridLayout
+    QScrollArea, QGridLayout, QDialog, QStyledItemDelegate
 )
 from qtpy.QtCore import Qt, QSettings, QSize
 from qtpy.QtGui import QAction, QIcon, QPixmap, QColor, QPalette
@@ -113,6 +113,8 @@ TRANSLATIONS = {
         'integer_scaling': 'Integer Scaling',
         'shader_list': 'Shaders',
         'shader_file': 'Shader File',
+        'shader_params': 'Shader Parameters',
+        'configure': 'Configure',
         # Sound Tab
         'audio': 'Audio',
         'audio_output': 'Audio Output:',
@@ -185,6 +187,7 @@ TRANSLATIONS = {
         'error': 'Error',
         'save': 'Save',
         'launch': 'Launch',
+        'reset': 'Reset',
     },
     'ko': {  # Korean
         'app_title': 'Sheepshaver & Basilisk II 환경설정 편집기',
@@ -227,6 +230,8 @@ TRANSLATIONS = {
         'integer_scaling': '정수 스케일링',
         'shader_list': '쉐이더 목록',
         'shader_file': '쉐이더 파일',
+        'shader_params': '쉐이더 파라미터',
+        'configure': '설정',
         'audio': '오디오',
         'audio_output': '오디오 출력:',
         'disable_sound': '사운드 비활성화',
@@ -332,6 +337,8 @@ TRANSLATIONS = {
         'integer_scaling': '整数缩放',
         'shader_list': '着色器',
         'shader_file': '着色器文件',
+        'shader_params': '着色器参数',
+        'configure': '配置',
         'audio': '音频',
         'audio_output': '音频输出:',
         'disable_sound': '禁用声音',
@@ -437,6 +444,8 @@ TRANSLATIONS = {
         'integer_scaling': '整数スケーリング',
         'shader_list': 'シェーダー',
         'shader_file': 'シェーダーファイル',
+        'shader_params': 'シェーダーパラメータ',
+        'configure': '設定',
         'audio': 'オーディオ',
         'audio_output': 'オーディオ出力:',
         'disable_sound': 'サウンドを無効にする',
@@ -542,6 +551,8 @@ TRANSLATIONS = {
         'integer_scaling': 'Escalado Entero',
         'shader_list': 'Shaders',
         'shader_file': 'Archivo de Shader',
+        'shader_params': 'Parámetros del Shader',
+        'configure': 'Configurar',
         'audio': 'Audio',
         'audio_output': 'Salida de Audio:',
         'disable_sound': 'Deshabilitar Sonido',
@@ -681,6 +692,27 @@ class ConfigParser:
         config['disks'] = disks
         config['shaders'] = shaders
         return config
+
+    @staticmethod
+    def parse_shader_params(params_str: str) -> dict:
+        """Parse shader_params string into dictionary."""
+        params = {}
+        if not params_str:
+            return params
+        
+        for pair in params_str.split(','):
+            if '=' in pair:
+                key, val = pair.split('=', 1)
+                try:
+                    params[key.strip()] = float(val.strip())
+                except ValueError:
+                    continue
+        return params
+
+    @staticmethod
+    def serialize_shader_params(params: dict) -> str:
+        """Serialize dictionary to shader_params string."""
+        return ','.join([f"{k}={v}" for k, v in params.items()])
     
     @staticmethod
     def save(filepath: str, config: dict):
@@ -717,6 +749,130 @@ class ConfigParser:
 # Sub-Tab Widgets
 # ============================================================================
 
+# ============================================================================
+# Custom Delegates
+# ============================================================================
+
+class PathDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        option.textElideMode = Qt.ElideLeft
+        super().paint(painter, option, index)
+
+
+# ============================================================================
+# Sub-Tab Widgets
+# ============================================================================
+
+class ShaderParamsDialog(QDialog):
+    """Dialog to edit shader parameters."""
+    
+    def __init__(self, parent, shader_path, current_params):
+        super().__init__(parent)
+        self.shader_path = shader_path
+        self.current_params = current_params.copy() # Local copy
+        self.setWindowTitle(tr('shader_params'))
+        self.setMinimumWidth(400)
+        self.init_ui()
+        
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # Scroll area for parameters
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_content = QWidget()
+        self.form_layout = QFormLayout(scroll_content)
+        
+        self.params_found = self._parse_shader_file()
+        self.inputs = {}
+        
+        if not self.params_found:
+            layout.addWidget(QLabel("No parameters found in this shader."))
+        else:
+            for param in self.params_found:
+                name, desc, default, min_val, max_val, step = param
+                
+                # Get current value or default
+                val = self.current_params.get(name, default)
+                
+                # Create control
+                spin = QDoubleSpinBox()
+                spin.setRange(min_val, max_val)
+                spin.setSingleStep(step)
+                spin.setValue(val)
+                spin.setDecimals(4) # Support high precision
+                
+                self.inputs[name] = spin
+                self.form_layout.addRow(f"{desc} ({name}):", spin)
+        
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        reset_btn = QPushButton(tr('reset'))
+        reset_btn.clicked.connect(self.reset_params)
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(reset_btn)
+        btn_layout.addStretch()
+        btn_layout.addWidget(ok_btn)
+        btn_layout.addWidget(cancel_btn)
+        layout.addLayout(btn_layout)
+        
+    def _parse_shader_file(self):
+        """Parse #pragma parameter lines from shader file."""
+        params = []
+        if not os.path.exists(self.shader_path):
+            return params
+            
+        import re
+        # Regex for: #pragma parameter NAME "Description" DEFAULT MIN MAX STEP
+        # Allow loosely formatted floats
+        pattern = re.compile(r'#pragma\s+parameter\s+(\w+)\s+"([^"]+)"\s+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)')
+        
+        try:
+            with open(self.shader_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    match = pattern.search(line)
+                    if match:
+                        name = match.group(1)
+                        desc = match.group(2)
+                        default = float(match.group(3))
+                        min_val = float(match.group(4))
+                        max_val = float(match.group(5))
+                        step = float(match.group(6))
+                        params.append((name, desc, default, min_val, max_val, step))
+        except Exception as e:
+            print(f"Error parsing shader: {e}")
+            
+        return params
+    
+    def reset_params(self):
+        """Reset all parameters to their default values."""
+        if not self.params_found:
+            return
+            
+        for param in self.params_found:
+            name, desc, default, min_val, max_val, step = param
+            if name in self.inputs:
+                self.inputs[name].setValue(default)
+
+    def get_params(self):
+        """Return updated parameters dictionary."""
+        updates = {}
+        for name, spin in self.inputs.items():
+            updates[name] = spin.value()
+        
+        # Merge updates into current_params
+        result = self.current_params.copy()
+        result.update(updates)
+        return result
+
+
 class DrivesTab(QWidget):
     """Disk and storage configuration."""
     
@@ -740,6 +896,9 @@ class DrivesTab(QWidget):
         self.disk_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.disk_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.disk_table.verticalHeader().setFixedWidth(25)  # Make numbering column wider
+        # self.disk_table.setTextElideMode(Qt.ElideLeft) # Handled by delegate
+        self.disk_table.setItemDelegateForColumn(0, PathDelegate(self.disk_table))
+        
         # self.disk_table.setDragDropMode(QAbstractItemView.InternalMove) # Drag drop rows in TableWidget is complex, relying on buttons
         disk_layout.addWidget(self.disk_table)
 
@@ -825,6 +984,7 @@ class DrivesTab(QWidget):
         # Path item
         path_item = QTableWidgetItem(path)
         path_item.setFlags(path_item.flags() ^ Qt.ItemIsEditable) # Make read-only
+        path_item.setToolTip(path) # Set tooltip
         self.disk_table.setItem(row, 0, path_item)
         
         # Checkbox item
@@ -869,9 +1029,12 @@ class DrivesTab(QWidget):
         chk2 = self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).isChecked()
         
         self.disk_table.item(row1, 0).setText(path2)
+        # Should update tooltip too
+        self.disk_table.item(row1, 0).setToolTip(path2)
         self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).setChecked(chk2)
         
         self.disk_table.item(row2, 0).setText(path1)
+        self.disk_table.item(row2, 0).setToolTip(path1)
         self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).setChecked(chk1)
     
     def browse_file(self, line_edit, filter_str):
@@ -1000,12 +1163,14 @@ class GraphicsTab(QWidget):
         shader_layout = QVBoxLayout(shader_group)
         
         self.shader_table = QTableWidget()
-        self.shader_table.setColumnCount(2)
-        self.shader_table.setHorizontalHeaderLabels([tr('path'), tr('disabled')])
+        self.shader_table.setColumnCount(3)
+        self.shader_table.setHorizontalHeaderLabels([tr('path'), tr('configure'), tr('disabled')])
         self.shader_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.shader_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.shader_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.shader_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.shader_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.shader_table.setTextElideMode(Qt.ElideLeft)
         shader_layout.addWidget(self.shader_table)
         
         # Shader Buttons
@@ -1047,6 +1212,20 @@ class GraphicsTab(QWidget):
         path_item.setFlags(path_item.flags() ^ Qt.ItemIsEditable) # Make read-only
         self.shader_table.setItem(row, 0, path_item)
         
+        # Gear Button
+        btn_widget = QWidget()
+        btn_layout = QHBoxLayout(btn_widget)
+        btn_layout.setContentsMargins(4, 2, 4, 2)
+        btn_layout.setAlignment(Qt.AlignCenter)
+        
+        gear_btn = QPushButton("⚙") 
+        gear_btn.setToolTip(tr('configure'))
+        gear_btn.setFixedSize(24, 24)
+        gear_btn.clicked.connect(self.open_shader_params)
+        
+        btn_layout.addWidget(gear_btn)
+        self.shader_table.setCellWidget(row, 1, btn_widget)
+        
         # Checkbox item
         chk = QCheckBox()
         chk.setChecked(disabled)
@@ -1056,7 +1235,29 @@ class GraphicsTab(QWidget):
         layout.addWidget(chk)
         layout.setAlignment(Qt.AlignCenter)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.shader_table.setCellWidget(row, 1, cell_widget)
+        self.shader_table.setCellWidget(row, 2, cell_widget)
+    
+    def open_shader_params(self):
+        start_btn = self.sender()
+        if not start_btn: return
+        
+        # Find which row this button belongs to
+        row = -1
+        for i in range(self.shader_table.rowCount()):
+            widget = self.shader_table.cellWidget(i, 1)
+            if widget and widget.findChild(QPushButton) == start_btn:
+                row = i
+                break
+        
+        if row == -1: return
+        
+        path = self.shader_table.item(row, 0).text()
+        
+        # Open dialog
+        dialog = ShaderParamsDialog(self, path, self.current_shader_params)
+        if dialog.exec_() == QDialog.Accepted:
+            # Update params
+            self.current_shader_params = dialog.get_params()
     
     def remove_shader(self):
         row = self.shader_table.currentRow()
@@ -1078,16 +1279,19 @@ class GraphicsTab(QWidget):
     def _swap_rows(self, row1, row2):
         # Swap content
         path1 = self.shader_table.item(row1, 0).text()
-        chk1 = self.shader_table.cellWidget(row1, 1).findChild(QCheckBox).isChecked()
+        # Gear button doesn't store state, just reference to row, but row changes logic handles it by button position.
+        # But we must recreate widgets or swap them. QTableWidget doesn't support swapping widgets easily.
+        # It's easier to rebuild the rows or just swap values. But Button has connection.
+        # Actually reusing the logic:
+        chk1 = self.shader_table.cellWidget(row1, 2).findChild(QCheckBox).isChecked()
+        chk2 = self.shader_table.cellWidget(row2, 2).findChild(QCheckBox).isChecked()
         
-        path2 = self.shader_table.item(row2, 0).text()
-        chk2 = self.shader_table.cellWidget(row2, 1).findChild(QCheckBox).isChecked()
-        
-        self.shader_table.item(row1, 0).setText(path2)
-        self.shader_table.cellWidget(row1, 1).findChild(QCheckBox).setChecked(chk2)
+        self.shader_table.item(row1, 0).setText(self.shader_table.item(row2, 0).text())
+        self.shader_table.cellWidget(row1, 2).findChild(QCheckBox).setChecked(chk2)
         
         self.shader_table.item(row2, 0).setText(path1)
-        self.shader_table.cellWidget(row2, 1).findChild(QCheckBox).setChecked(chk1)
+        self.shader_table.cellWidget(row2, 2).findChild(QCheckBox).setChecked(chk1)
+        # Note: Gear button is identical on all rows, no state to swap.
     
     def load_config(self, config: dict):
         screen = str(config.get('screen', 'win/800/600'))
@@ -1128,6 +1332,10 @@ class GraphicsTab(QWidget):
             else:
                 path, disabled = shader_entry, False
             self._add_shader_row(path, disabled)
+        
+        # Load shader params
+        params_str = str(config.get('shader_params', ''))
+        self.current_shader_params = ConfigParser.parse_shader_params(params_str)
     
     def save_config(self, config: dict):
         config['screen'] = f"{self.screen_mode.currentText()}/{self.screen_width.value()}/{self.screen_height.value()}"
@@ -1147,9 +1355,12 @@ class GraphicsTab(QWidget):
         shaders = []
         for i in range(self.shader_table.rowCount()):
             path = self.shader_table.item(i, 0).text()
-            disabled = self.shader_table.cellWidget(i, 1).findChild(QCheckBox).isChecked()
+            disabled = self.shader_table.cellWidget(i, 2).findChild(QCheckBox).isChecked()
             shaders.append((path, disabled))
         config['shaders'] = shaders
+        
+        # Save shader params
+        config['shader_params'] = ConfigParser.serialize_shader_params(self.current_shader_params)
 
 
 class SoundTab(QWidget):
