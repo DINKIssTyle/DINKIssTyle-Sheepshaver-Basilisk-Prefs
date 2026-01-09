@@ -17,7 +17,8 @@ from qtpy.QtWidgets import (
     QComboBox, QListWidget, QListWidgetItem, QGroupBox, QFormLayout,
     QFileDialog, QMessageBox, QToolBar, QSplitter, QFrame, QDoubleSpinBox,
     QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QScrollArea, QGridLayout, QDialog, QStyledItemDelegate
+    QScrollArea, QGridLayout, QDialog, QStyledItemDelegate, QInputDialog,
+    QButtonGroup
 )
 from qtpy.QtCore import Qt, QSettings, QSize
 from qtpy.QtGui import QAction, QIcon, QPixmap, QColor, QPalette
@@ -74,8 +75,9 @@ TRANSLATIONS = {
         'basilisk_tab': 'Basilisk II',
         'sheepshaver_tab': 'Sheepshaver',
         'settings_tab': 'Settings',
-        'save_all': 'Save All',
+        'save': 'Save',
         'reload': 'Reload',
+        'management': 'Management',
         'about': 'About',
         'language': 'Language',
         'language_section': 'Language',
@@ -186,16 +188,34 @@ TRANSLATIONS = {
         'config_saved': 'Configuration saved and reloaded successfully!',
         'error': 'Error',
         'save': 'Save',
+        'save_as': 'Save As',
         'launch': 'Launch',
         'reset': 'Reset',
+        'new_profile': 'New Profile',
+        'profile_name': 'Profile Name:',
+        'default_profile': 'Default',
+        'enter_profile_name': 'Enter name for new profile:',
+        'profile_exists': 'A profile with this name already exists.',
+        'filter_all': 'All',
+        'rename': 'Rename',
+        'delete': 'Delete',
+        'duplicate': 'Duplicate',
+        'copy_suffix': ' copy',
+        'confirm_delete': 'Confirm Delete',
+        'delete_msg1': 'Are you sure you want to delete profile "{}"?',
+        'delete_msg2': 'This action cannot be undone. Really delete?',
+        'rename_profile': 'Rename Profile',
+        'enter_new_name': 'Enter new profile name:',
+        'close': 'Close',
     },
     'ko': {  # Korean
         'app_title': 'Sheepshaver & Basilisk II 환경설정 편집기',
         'basilisk_tab': 'Basilisk II',
         'sheepshaver_tab': 'Sheepshaver',
         'settings_tab': '설정',
-        'save_all': '모두 저장',
+        'save': '저장',
         'reload': '새로고침',
+        'management': '관리',
         'about': '정보',
         'language': '언어',
         'language_section': '언어',
@@ -294,15 +314,34 @@ TRANSLATIONS = {
         'config_saved': '설정이 저장되고 새로고침되었습니다!',
         'error': '오류',
         'save': '저장',
+        'save_as': '다른 이름으로 저장',
         'launch': '실행',
+        'reset': '초기화',
+        'new_profile': '새 프로필',
+        'profile_name': '프로필 이름:',
+        'default_profile': '기본값',
+        'enter_profile_name': '새 프로필 이름을 입력하세요:',
+        'profile_exists': '같은 이름의 프로필이 이미 존재합니다.',
+        'filter_all': '전체',
+        'rename': '이름 변경',
+        'delete': '삭제',
+        'duplicate': '복제',
+        'copy_suffix': ' 복사본',
+        'confirm_delete': '삭제 확인',
+        'delete_msg1': '프로필 "{}"을(를) 정말 삭제하시겠습니까?',
+        'delete_msg2': '이 작업은 되돌릴 수 없습니다. 정말 삭제합니까?',
+        'rename_profile': '프로필 이름 변경',
+        'enter_new_name': '새 프로필 이름을 입력하세요:',
+        'close': '닫기',
     },
     'zh': {  # Chinese (Simplified)
         'app_title': 'Sheepshaver & Basilisk II 偏好设置编辑器',
         'basilisk_tab': 'Basilisk II',
         'sheepshaver_tab': 'Sheepshaver',
         'settings_tab': '设置',
-        'save_all': '全部保存',
+        'save': '保存',
         'reload': '重新加载',
+        'management': '管理',
         'about': '关于',
         'language': '语言',
         'language_section': '语言',
@@ -401,7 +440,14 @@ TRANSLATIONS = {
         'config_saved': '配置已保存并重新加载!',
         'error': '错误',
         'save': '保存',
+        'save_as': '另存为',
         'launch': '启动',
+        'reset': '重置',
+        'new_profile': '新配置文件',
+        'profile_name': '配置文件名称:',
+        'default_profile': '默认',
+        'enter_profile_name': '输入新配置文件的名称:',
+        'profile_exists': '具有此名称的配置文件已存在。',
     },
     'ja': {  # Japanese
         'app_title': 'Sheepshaver & Basilisk II 環境設定エディタ',
@@ -508,7 +554,14 @@ TRANSLATIONS = {
         'config_saved': '設定が保存され、再読み込みされました!',
         'error': 'エラー',
         'save': '保存',
+        'save_as': '名前を付けて保存',
         'launch': '起動',
+        'reset': 'リセット',
+        'new_profile': '新規プロファイル',
+        'profile_name': 'プロファイル名:',
+        'default_profile': 'デフォルト',
+        'enter_profile_name': '新規プロファイル名を入力してください:',
+        'profile_exists': 'この名前のプロファイルは既に存在します。',
     },
     'es': {  # Spanish
         'app_title': 'Editor de Preferencias de Sheepshaver y Basilisk II',
@@ -2095,7 +2148,10 @@ class LeftPanel(QWidget):
     from qtpy.QtCore import Signal
     power_clicked = Signal()
     save_clicked = Signal()
+    power_clicked = Signal()
+    save_clicked = Signal()
     reload_clicked = Signal()
+    config_changed = Signal(str) # Path to selected config
     
     def __init__(self, emulator_type: str):
         super().__init__()
@@ -2121,6 +2177,18 @@ class LeftPanel(QWidget):
             cfg['panel_margin_right'],
             cfg['panel_margin_bottom']
         )
+        
+        # ==================== Row 0: Config Selector ====================
+        row0 = QWidget()
+        row0_layout = QVBoxLayout(row0)
+        row0_layout.setContentsMargins(0, 5, 0, 5)
+        
+        self.config_selector = QComboBox()
+        self.config_selector.setToolTip(tr('settings_tab'))
+        self.config_selector.currentIndexChanged.connect(self._on_config_changed)
+        
+        row0_layout.addWidget(self.config_selector)
+        layout.addWidget(row0)
         
         # ==================== Row 1: Icon ====================
         row1 = QWidget()
@@ -2284,9 +2352,31 @@ class LeftPanel(QWidget):
                 size = LEFT_PANEL_CONFIG['icon_size']
                 pixmap = pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.icon_label.setPixmap(pixmap)
-        else:
-            # Clear the icon if not found
-            self.icon_label.clear()
+                return
+        
+        # Clear the icon if not found or invalid
+        self.icon_label.clear()
+
+    def _on_config_changed(self, index):
+        if index >= 0:
+            path = self.config_selector.itemData(index)
+            if path:
+                self.config_changed.emit(path)
+
+    def populate_configs(self, configs, current_path=None):
+        """Populate config selector with list of (name, path) tuples."""
+        self.config_selector.blockSignals(True)
+        self.config_selector.clear()
+        
+        for name, path in configs:
+            self.config_selector.addItem(name, path)
+            
+        if current_path:
+            index = self.config_selector.findData(current_path)
+            if index >= 0:
+                self.config_selector.setCurrentIndex(index)
+        
+        self.config_selector.blockSignals(False)
 
 
 # ============================================================================
@@ -2299,6 +2389,7 @@ class EmulatorTab(QWidget):
     from qtpy.QtCore import Signal
     launch_requested = Signal()
     save_requested = Signal()
+    save_as_requested = Signal()
     reload_requested = Signal()
     
     def __init__(self, emulator_type: str):
@@ -2314,6 +2405,7 @@ class EmulatorTab(QWidget):
         # Left Panel
         self.left_panel = LeftPanel(self.emulator_type)
         self.left_panel.power_clicked.connect(self.launch_requested.emit)
+        # self.left_panel.config_changed.connect(self._on_config_changed) # Handled by PrefsEditor
         main_layout.addWidget(self.left_panel)
         
         # Right Panel (sub-tabs)
@@ -2370,12 +2462,21 @@ class EmulatorTab(QWidget):
         self.sub_tabs.addTab(self.cpu_memory_tab, get_icon("cpu_memory.png"), "")
         self.sub_tabs.addTab(self.input_serial_tab, get_icon("keyboard.png"), "")
         self.sub_tabs.addTab(self.misc_tab, get_icon("misc.png"), "")
-        
+
         # Set icon size for better visibility
-        self.sub_tabs.setIconSize(QSize(24, 24))
+        self.sub_tabs.setIconSize(QSize(32, 32))
+        
+        # Adjust tabs to fit width
+        # self.sub_tabs.setUsesScrollButtons(True) 
         
         right_layout.addWidget(self.sub_tabs)
-        main_layout.addWidget(right_widget, 1)  # Stretch factor 1 for right panel
+        main_layout.addWidget(right_widget, 1)
+
+    def _on_config_changed(self, path):
+        """Handle config selection change from LeftPanel."""
+        # Signal parent to load this config
+        # Store it temporarily? Parent (PrefsEditor) handles loading.
+        pass # Signal connected in PrefsEditor
     
     def load_config(self, config: dict):
         self.config = config
@@ -2414,6 +2515,9 @@ class EmulatorTab(QWidget):
 class SettingsTab(QWidget):
     """Application settings - executable and config paths."""
     
+    from qtpy.QtCore import Signal
+    settings_saved = Signal()
+
     def __init__(self):
         super().__init__()
         self.settings = QSettings('DINKIssTyle', 'EmulatorPrefs')
@@ -2534,7 +2638,9 @@ class SettingsTab(QWidget):
         self.settings.setValue('basilisk/cfg', self.basilisk_cfg.text())
         self.settings.setValue('sheepshaver/exe', self.sheepshaver_exe.text())
         self.settings.setValue('sheepshaver/cfg', self.sheepshaver_cfg.text())
+        self.settings.setValue('sheepshaver/cfg', self.sheepshaver_cfg.text())
         QMessageBox.information(self, tr('settings_tab'), tr('settings_saved'))
+        self.settings_saved.emit()
     
     def zap_pram(self, emulator_type: str):
         """Delete PRAM/NVRAM file for the specified emulator."""
@@ -2567,14 +2673,242 @@ class SettingsTab(QWidget):
 # Main Window
 # ============================================================================
 
+class ProfileManagerDialog(QDialog):
+    """Dialog for managing profiles (rename, delete)."""
+    
+    def __init__(self, parent=None, active_emulator='basilisk', base_dirs=None):
+        super().__init__(parent)
+        self.active_emulator = active_emulator
+        self.base_dirs = base_dirs or {}
+        self.setWindowTitle(tr('management'))
+        self.setMinimumSize(400, 400)
+        self.init_ui()
+        
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # Filter Buttons
+        filter_layout = QHBoxLayout()
+        self.btn_group = QButtonGroup(self)
+        
+        self.btn_all = QPushButton(tr('filter_all'))
+        self.btn_all.setCheckable(True)
+        self.btn_all.setChecked(True)
+        self.btn_group.addButton(self.btn_all, 0)
+        filter_layout.addWidget(self.btn_all)
+        
+        self.btn_basilisk = QPushButton(tr('basilisk_tab'))
+        self.btn_basilisk.setCheckable(True)
+        self.btn_group.addButton(self.btn_basilisk, 1)
+        filter_layout.addWidget(self.btn_basilisk)
+        
+        self.btn_sheepshaver = QPushButton(tr('sheepshaver_tab'))
+        self.btn_sheepshaver.setCheckable(True)
+        self.btn_group.addButton(self.btn_sheepshaver, 2)
+        filter_layout.addWidget(self.btn_sheepshaver)
+        
+        # Select current emulator filter by default
+        if self.active_emulator == 'basilisk':
+            self.btn_basilisk.setChecked(True)
+        elif self.active_emulator == 'sheepshaver':
+             self.btn_sheepshaver.setChecked(True)
+
+        self.btn_group.buttonClicked.connect(self.refresh_list)
+        layout.addLayout(filter_layout)
+        
+        # Profile List
+        self.list_widget = QListWidget()
+        layout.addWidget(self.list_widget)
+        
+        # Action Buttons
+        btn_layout = QHBoxLayout()
+        
+        self.btn_rename = QPushButton(tr('rename'))
+        self.btn_rename.clicked.connect(self.rename_profile)
+        btn_layout.addWidget(self.btn_rename)
+        
+        self.btn_duplicate = QPushButton(tr('duplicate'))
+        self.btn_duplicate.clicked.connect(self.duplicate_profile)
+        btn_layout.addWidget(self.btn_duplicate)
+        
+        self.btn_delete = QPushButton(tr('delete'))
+        self.btn_delete.clicked.connect(self.delete_profile)
+        btn_layout.addWidget(self.btn_delete)
+        
+        btn_close = QPushButton(tr('close'))
+        btn_close.clicked.connect(self.accept)
+        btn_layout.addWidget(btn_close)
+        
+        layout.addLayout(btn_layout)
+        
+        self.refresh_list()
+        
+    def refresh_list(self):
+        """Scan and populate list based on filter."""
+        self.list_widget.clear()
+        filter_id = self.btn_group.checkedId() # 0=All, 1=Basilisk, 2=Sheepshaver
+        
+        configs = []
+        
+        # Helper to scan a type
+        def scan(emu_type):
+            cfg_path_setting = self.base_dirs.get(emu_type)
+            if not cfg_path_setting: return []
+            
+            directory = os.path.dirname(cfg_path_setting)
+            if not os.path.exists(directory): return []
+            
+            prefix = ".basilisk_ii_" if emu_type == 'basilisk' else ".sheepshaver_"
+            suffix = "_prefs"
+            default_file = ".basilisk_ii_prefs" if emu_type == 'basilisk' else ".sheepshaver_prefs"
+            
+            found = []
+            try:
+                for f in os.listdir(directory):
+                    full_path = os.path.join(directory, f)
+                    display_name = ""
+                    
+                    if f == default_file:
+                        display_name = tr('default_profile')
+                    elif f.startswith(prefix) and f.endswith(suffix):
+                        middle = f[len(prefix):-len(suffix)]
+                        display_name = middle.replace("_", " ")
+                    
+                    if display_name:
+                         # Append type to display name if showing all
+                         label = f"[{tr('basilisk_tab' if emu_type == 'basilisk' else 'sheepshaver_tab')}] {display_name}"
+                         found.append((label, full_path, emu_type, f))
+            except Exception:
+                pass
+            return found
+
+        if filter_id == 0 or filter_id == 1:
+            configs.extend(scan('basilisk'))
+        
+        if filter_id == 0 or filter_id == 2:
+            configs.extend(scan('sheepshaver'))
+            
+        configs.sort(key=lambda x: x[0])
+        
+        for label, path, emu, filename in configs:
+            item = QListWidgetItem(label)
+            item.setData(Qt.UserRole, path)
+            item.setData(Qt.UserRole + 1, emu)
+            item.setData(Qt.UserRole + 2, filename)
+            self.list_widget.addItem(item)
+            
+    def rename_profile(self):
+        item = self.list_widget.currentItem()
+        if not item: return
+        
+        old_path = item.data(Qt.UserRole)
+        emu_type = item.data(Qt.UserRole + 1)
+        original_filename = item.data(Qt.UserRole + 2)
+        
+        # Don't rename default
+        if "prefs" == original_filename or original_filename.startswith(".basilisk_ii_prefs") or original_filename == ".sheepshaver_prefs": 
+             # Check exact default names
+             if original_filename in [".basilisk_ii_prefs", ".sheepshaver_prefs"]:
+                QMessageBox.warning(self, tr('rename'), "Cannot rename default profile.")
+                return
+
+        # Pre-fill with current display name
+        current_display_name = item.text().split("] ", 1)[-1]
+        name, ok = QInputDialog.getText(self, tr('rename_profile'), tr('enter_new_name'), QLineEdit.Normal, current_display_name)
+        if ok and name:
+            safe_name = "".join(c for c in name if c.isalnum() or c in (' ', '_', '-', '.', '(', ')')).strip()
+            if not safe_name: return
+            
+            file_name_part = safe_name.replace(" ", "_")
+            prefix = ".basilisk_ii_" if emu_type == 'basilisk' else ".sheepshaver_"
+            new_filename = f"{prefix}{file_name_part}_prefs"
+            
+            directory = os.path.dirname(old_path)
+            new_path = os.path.join(directory, new_filename)
+            
+            if os.path.exists(new_path):
+                QMessageBox.warning(self, tr('rename'), tr('profile_exists'))
+                return
+                
+            try:
+                os.rename(old_path, new_path)
+                self.refresh_list()
+            except Exception as e:
+                QMessageBox.critical(self, tr('error'), str(e))
+
+    def duplicate_profile(self):
+        item = self.list_widget.currentItem()
+        if not item: return
+        
+        old_path = item.data(Qt.UserRole)
+        emu_type = item.data(Qt.UserRole + 1)
+        original_filename = item.data(Qt.UserRole + 2)
+        
+        # Get current display name for default naming
+        current_display_name = item.text().split("] ", 1)[-1]
+        default_new_name = current_display_name + tr('copy_suffix')
+        
+        name, ok = QInputDialog.getText(self, tr('duplicate'), tr('enter_profile_name'), QLineEdit.Normal, default_new_name)
+        
+        if ok and name:
+            safe_name = "".join(c for c in name if c.isalnum() or c in (' ', '_', '-', '.', '(', ')')).strip()
+            if not safe_name: return
+            
+            file_name_part = safe_name.replace(" ", "_")
+            prefix = ".basilisk_ii_" if emu_type == 'basilisk' else ".sheepshaver_"
+            new_filename = f"{prefix}{file_name_part}_prefs"
+            
+            directory = os.path.dirname(old_path)
+            new_path = os.path.join(directory, new_filename)
+            
+            if os.path.exists(new_path):
+                QMessageBox.warning(self, tr('duplicate'), tr('profile_exists'))
+                # Suggest recursive suffix? For now just stop.
+                return
+                
+            try:
+                # Copy file content
+                with open(old_path, 'r') as f_src:
+                    content = f_src.read()
+                with open(new_path, 'w') as f_dst:
+                    f_dst.write(content)
+                    
+                self.refresh_list()
+            except Exception as e:
+                QMessageBox.critical(self, tr('error'), str(e))
+
+    def delete_profile(self):
+        item = self.list_widget.currentItem()
+        if not item: return
+        
+        path = item.data(Qt.UserRole)
+        label = item.text()
+        original_filename = item.data(Qt.UserRole + 2)
+        
+        if original_filename in [".basilisk_ii_prefs", ".sheepshaver_prefs"]:
+            QMessageBox.warning(self, tr('delete'), "Cannot delete default profile.")
+            return
+
+        # Double confirmation
+        ret = QMessageBox.question(self, tr('confirm_delete'), tr('delete_msg1').format(label), QMessageBox.Yes | QMessageBox.No)
+        if ret == QMessageBox.Yes:
+            ret2 = QMessageBox.question(self, tr('confirm_delete'), tr('delete_msg2'), QMessageBox.Yes | QMessageBox.No)
+            if ret2 == QMessageBox.Yes:
+                try:
+                    os.remove(path)
+                    self.refresh_list()
+                except Exception as e:
+                    QMessageBox.critical(self, tr('error'), str(e))
+
 class PrefsEditor(QMainWindow):
     """Main application window."""
     
     def __init__(self):
         super().__init__()
         self.settings = QSettings('DINKIssTyle', 'EmulatorPrefs')
+        self.active_configs = {} # Store active config path for each emulator
         self.init_ui()
-        self.load_configs()
+        self.load_settings_and_profiles()
     
     def init_ui(self):
         self.setWindowTitle(tr('app_title'))
@@ -2597,16 +2931,22 @@ class PrefsEditor(QMainWindow):
         self.basilisk_tab = EmulatorTab('basilisk')
         self.sheepshaver_tab = EmulatorTab('sheepshaver')
         self.settings_tab = SettingsTab()
+        self.settings_tab.settings_saved.connect(self.scan_and_load_initial_profiles)
         
         # Connect power button signals
         self.basilisk_tab.launch_requested.connect(lambda: self.launch_emulator('basilisk'))
         self.sheepshaver_tab.launch_requested.connect(lambda: self.launch_emulator('sheepshaver'))
         
+        # Connect config changed signals
+        self.basilisk_tab.left_panel.config_changed.connect(lambda p: self.switch_profile('basilisk', p))
+        self.sheepshaver_tab.left_panel.config_changed.connect(lambda p: self.switch_profile('sheepshaver', p))
+
         # Connect save and reload signals
-        self.basilisk_tab.save_requested.connect(self.save_all_configs)
-        self.basilisk_tab.reload_requested.connect(self.load_configs)
-        self.sheepshaver_tab.save_requested.connect(self.save_all_configs)
-        self.sheepshaver_tab.reload_requested.connect(self.load_configs)
+        # Connect save and reload signals
+        self.basilisk_tab.save_requested.connect(self.save_current_config)
+        self.basilisk_tab.reload_requested.connect(lambda: self.load_configs())
+        self.sheepshaver_tab.save_requested.connect(self.save_current_config)
+        self.sheepshaver_tab.reload_requested.connect(lambda: self.load_configs())
         
         self.main_tabs.addTab(self.basilisk_tab, get_icon("68k.png"), tr('basilisk_tab'))
         self.main_tabs.addTab(self.sheepshaver_tab, get_icon("ppc.png"), tr('sheepshaver_tab'))
@@ -2623,20 +2963,28 @@ class PrefsEditor(QMainWindow):
         btn_height = 26
         
         # Save All Button
-        save_btn = QPushButton(tr('save_all'))
+        save_btn = QPushButton(tr('save'))
         save_btn.setIcon(get_icon("save.png"))
         save_btn.setCursor(Qt.PointingHandCursor)
         save_btn.setFixedHeight(btn_height)
-        save_btn.clicked.connect(self.save_all_configs)
+        save_btn.clicked.connect(self.save_current_config)
         top_right_layout.addWidget(save_btn)
         
-        # Reload Button
-        reload_btn = QPushButton(tr('reload'))
-        reload_btn.setIcon(get_icon("reload.png"))
-        reload_btn.setCursor(Qt.PointingHandCursor)
-        reload_btn.setFixedHeight(btn_height)
-        reload_btn.clicked.connect(self.load_configs)
-        top_right_layout.addWidget(reload_btn)
+        # Save As Button
+        save_as_btn = QPushButton(tr('save_as'))
+        save_as_btn.setIcon(get_icon("save_as.png")) # Assuming icon exists or fallback
+        save_as_btn.setCursor(Qt.PointingHandCursor)
+        save_as_btn.setFixedHeight(btn_height)
+        save_as_btn.clicked.connect(self.save_as_config)
+        top_right_layout.addWidget(save_as_btn)
+        
+        # Management Button
+        mgmt_btn = QPushButton(tr('management'))
+        mgmt_btn.setIcon(get_icon("fav.png")) # Reusing settings icon or generic
+        mgmt_btn.setCursor(Qt.PointingHandCursor)
+        mgmt_btn.setFixedHeight(btn_height)
+        mgmt_btn.clicked.connect(self.open_management_dialog)
+        top_right_layout.addWidget(mgmt_btn)
         
         # About Button
         about_btn = QPushButton(tr('about'))
@@ -2647,65 +2995,250 @@ class PrefsEditor(QMainWindow):
         top_right_layout.addWidget(about_btn)
         
         self.main_tabs.setCornerWidget(top_right_widget, Qt.TopRightCorner)
-    
-    def load_configs(self):
-        """Load configuration files."""
-        basilisk_cfg = self.settings.value('basilisk/cfg', '')
-        if basilisk_cfg and os.path.exists(basilisk_cfg):
-            config = ConfigParser.parse(basilisk_cfg)
-            self.basilisk_tab.load_config(config)
+
+    def load_settings_and_profiles(self):
+        """Load global settings and then scan/load profiles."""
+        self.settings_tab.load_settings()
+        self.scan_and_load_initial_profiles()
+
+    def open_management_dialog(self):
+        """Open the profile management dialog."""
+        idx = self.main_tabs.currentIndex()
+        active_emu = 'basilisk' if idx == 0 else 'sheepshaver' if idx == 1 else 'basilisk'
         
-        sheepshaver_cfg = self.settings.value('sheepshaver/cfg', '')
-        if sheepshaver_cfg and os.path.exists(sheepshaver_cfg):
-            config = ConfigParser.parse(sheepshaver_cfg)
-            self.sheepshaver_tab.load_config(config)
+        # Pass base directories to dialog to know where to scan
+        base_dirs = {
+            'basilisk': self.settings_tab.basilisk_cfg.text(),
+            'sheepshaver': self.settings_tab.sheepshaver_cfg.text()
+        }
+        
+        dlg = ProfileManagerDialog(self, active_emu, base_dirs)
+        dlg.exec_()
+        
+        # Refresh profiles after closing management
+        self.scan_and_load_initial_profiles()
     
-    def save_all_configs(self):
-        """Save all configuration files."""
-        try:
-            basilisk_cfg = self.settings.value('basilisk/cfg', '')
-            if basilisk_cfg:
-                config = self.basilisk_tab.save_config()
-                ConfigParser.save(basilisk_cfg, config)
+    def scan_and_load_initial_profiles(self):
+        """Scan profiles for both emulators and load the initial one."""
+        # Load last used profiles
+        last_basilisk = self.settings_tab.settings.value("last_profile_basilisk", "")
+        last_sheepshaver = self.settings_tab.settings.value("last_profile_sheepshaver", "")
+        
+        if last_basilisk and os.path.exists(last_basilisk):
+            self.active_configs['basilisk'] = last_basilisk
             
-            sheepshaver_cfg = self.settings.value('sheepshaver/cfg', '')
-            if sheepshaver_cfg:
-                config = self.sheepshaver_tab.save_config()
-                ConfigParser.save(sheepshaver_cfg, config)
+        if last_sheepshaver and os.path.exists(last_sheepshaver):
+            self.active_configs['sheepshaver'] = last_sheepshaver
+
+        for emu_type in ['basilisk', 'sheepshaver']:
+            self.refresh_profiles(emu_type)
+            # Active config is set during refresh if not already set, or reused
+            self.load_config_for_emulator(emu_type)
+
+    def refresh_profiles(self, emu_type):
+        """Scan directory for profiles and update LeftPanel."""
+        cfg_path_setting = self.settings_tab.basilisk_cfg.text() if emu_type == 'basilisk' else self.settings_tab.sheepshaver_cfg.text()
+        
+        configs = []
+        if cfg_path_setting:
+            directory = os.path.dirname(cfg_path_setting)
+            base_name = os.path.basename(cfg_path_setting)
             
-            # Reload configurations to reflect changes
-            self.load_configs()
+            # Determine prefix and suffix pattern
+            # Default is usually .basilisk_ii_prefs or .sheepshaver_prefs
+            # Custom is .basilisk_ii_NAME_prefs
             
-            QMessageBox.information(self, tr('save'), tr('config_saved'))
-        except Exception as e:
-            QMessageBox.critical(self, tr('error'), f"Failed to save configurations:\n{e}")
+            prefix = ".basilisk_ii_" if emu_type == 'basilisk' else ".sheepshaver_"
+            suffix = "_prefs"
+            
+            if os.path.exists(directory):
+                try:
+                    for filename in os.listdir(directory):
+                        if filename.startswith(prefix) and filename.endswith(suffix):
+                            full_path = os.path.join(directory, filename)
+                            
+                            # Extract name
+                            middle = filename[len(prefix):-len(suffix)]
+                            
+                            if middle == "":
+                                display_name = tr('default_profile')
+                            else:
+                                # Replace underscores with spaces
+                                display_name = middle.replace("_", " ")
+                                
+                            configs.append((display_name, full_path))
+                except Exception as e:
+                    print(f"Error scanning configs: {e}")
+        
+        # Sort by display name
+        configs.sort(key=lambda x: x[0])
+        
+        # Update UI
+        tab = self.basilisk_tab if emu_type == 'basilisk' else self.sheepshaver_tab
+        
+        # Determine current selection
+        current = self.active_configs.get(emu_type)
+        if not current and cfg_path_setting:
+             current = cfg_path_setting # Default to the one in settings if nothing active
+        
+        # If current is not in found configs (maybe a custom path not following pattern), add it
+        found_paths = [c[1] for c in configs]
+        if current and current not in found_paths and os.path.exists(current):
+             configs.insert(0, (tr('default_profile'), current))
+             
+        tab.left_panel.populate_configs(configs, current)
+        
+        # Ensure we have an active config
+        if configs:
+             # If current selection is valid, keep it. Else take first.
+             if not current or not any(c[1] == current for c in configs):
+                 self.active_configs[emu_type] = configs[0][1]
+             else:
+                 self.active_configs[emu_type] = current
+        else:
+             # Fallback if no configs found
+             self.active_configs[emu_type] = cfg_path_setting
+
+    def switch_profile(self, emu_type, path):
+        """Switch active profile and reload."""
+        if self.active_configs.get(emu_type) == path:
+            return
+            
+        self.active_configs[emu_type] = path
+        
+        # Save persistence
+        key = "last_profile_basilisk" if emu_type == 'basilisk' else "last_profile_sheepshaver"
+        self.settings_tab.settings.setValue(key, path)
+        
+        self.load_config_for_emulator(emu_type)
+
+    def load_config_for_emulator(self, emu_type):
+        """Load config from file for specific emulator."""
+        path = self.active_configs.get(emu_type)
+        if not path or not os.path.exists(path):
+            return
+
+        config = ConfigParser.parse(path)
+        tab = self.basilisk_tab if emu_type == 'basilisk' else self.sheepshaver_tab
+        tab.load_config(config)
+
+    def load_configs(self):
+        """Reload all configs (refresh profiles too)."""
+        self.scan_and_load_initial_profiles()
+        QMessageBox.information(self, tr('settings_tab'), tr('config_saved')) # Reusing message for reload logic
+
+    def save_current_config(self):
+        """Save configuration for the active emulator tab."""
+        idx = self.main_tabs.currentIndex()
+        
+        if idx == 0:
+            # Basilisk
+            b_path = self.active_configs.get('basilisk')
+            if b_path:
+                b_cfg = self.basilisk_tab.save_config()
+                ConfigParser.save(b_path, b_cfg)
+                QMessageBox.information(self, tr('basilisk_tab'), tr('config_saved'))
+                
+        elif idx == 1:
+            # Sheepshaver
+            s_path = self.active_configs.get('sheepshaver')
+            if s_path:
+                s_cfg = self.sheepshaver_tab.save_config()
+                ConfigParser.save(s_path, s_cfg)
+                QMessageBox.information(self, tr('sheepshaver_tab'), tr('config_saved'))
+        
+        else:
+             # For settings tab, we might want to trigger its save, but keeping it safe for now
+             pass
+
+    def save_as_config(self):
+        """Save current config as a new profile."""
+        idx = self.main_tabs.currentIndex()
+        if idx == 0:
+            emu_type = 'basilisk'
+        elif idx == 1:
+            emu_type = 'sheepshaver'
+        else:
+            QMessageBox.warning(self, tr('save_as'), "Please select an emulator tab first.")
+            return
+
+        name, ok = QInputDialog.getText(self, tr('new_profile'), tr('enter_profile_name'))
+        if ok and name:
+            # Check for invalid characters
+            safe_name = "".join(c for c in name if c.isalnum() or c in (' ', '_', '-', '.', '(', ')')).strip()
+            if not safe_name:
+                return
+
+            # Construct filename: name with underscores
+            file_name_part = safe_name.replace(" ", "_")
+            prefix = ".basilisk_ii_" if emu_type == 'basilisk' else ".sheepshaver_"
+            filename = f"{prefix}{file_name_part}_prefs"
+            
+            # Determine directory
+            base_cfg = self.settings_tab.basilisk_cfg.text() if emu_type == 'basilisk' else self.settings_tab.sheepshaver_cfg.text()
+            directory = os.path.dirname(base_cfg) if base_cfg else os.path.expanduser("~")
+            
+            new_path = os.path.join(directory, filename)
+            
+            if os.path.exists(new_path):
+                 QMessageBox.warning(self, tr('save_as'), tr('profile_exists'))
+                 return
+                 
+            # Save current state to new file
+            tab = self.basilisk_tab if emu_type == 'basilisk' else self.sheepshaver_tab
+            cfg = tab.save_config()
+            ConfigParser.save(new_path, cfg)
+            
+            # Refresh profiles and select the new one
+            self.refresh_profiles(emu_type)
+            
+            # Manually switch to new profile (refresh might default to something else or keep old)
+            self._force_select_profile(emu_type, new_path)
+            
+            QMessageBox.information(self, tr('save_as'), tr('settings_saved'))
+
+    def _force_select_profile(self, emu_type, path):
+         """Helper to force select a profile after creation."""
+         self.active_configs[emu_type] = path
+         self.refresh_profiles(emu_type) # Re-populate list
+         
+    def show_about(self):
+        dlg = AboutDialog(self)
+        dlg.exec()
     
     def launch_emulator(self, emulator_type: str):
-        """Launch the specified emulator."""
         if emulator_type == 'basilisk':
-            exe = self.settings.value('basilisk/exe', '')
-            cfg = self.settings.value('basilisk/cfg', '')
+            exe_path = self.settings_tab.basilisk_exe.text()
+            # USE ACTIVE CONFIG
+            config_path = self.active_configs.get('basilisk', self.settings_tab.basilisk_cfg.text())
         else:
-            exe = self.settings.value('sheepshaver/exe', '')
-            cfg = self.settings.value('sheepshaver/cfg', '')
+            exe_path = self.settings_tab.sheepshaver_exe.text()
+            # USE ACTIVE CONFIG
+            config_path = self.active_configs.get('sheepshaver', self.settings_tab.sheepshaver_cfg.text())
         
-        if not exe:
-            QMessageBox.warning(self, "Launch", f"Please set {emulator_type} executable path in Settings.")
+        if not exe_path or not os.path.exists(exe_path):
+            QMessageBox.critical(self, tr('error'), f"Executable not found:\n{exe_path}")
             return
-        
-        if not os.path.exists(exe):
-            QMessageBox.warning(self, "Launch", f"Executable not found: {exe}")
-            return
-        
-        try:
-            # Save config before launching
-            if emulator_type == 'basilisk':
-                config = self.basilisk_tab.save_config()
-            else:
-                config = self.sheepshaver_tab.save_config()
             
-            if cfg:
-                ConfigParser.save(cfg, config)
+        if not config_path or not os.path.exists(config_path):
+            QMessageBox.critical(self, tr('error'), f"Config file not found:\n{config_path}")
+            return
+            
+        try:
+            # Arguments: --config <path> is standard for many, let's assume direct path or arg
+            # BasiliskII/SheepShaver usually accept config file as argument or --config
+            # Let's try passing the config file path as the first argument
+            
+            # Note: SheepShaver/BasiliskII might expect --config if it's not the default
+            # Checking documentation implies they might just take the path.
+            # But let's assume standard behavior.
+            
+            # Use subprocess Popen
+            import subprocess
+            subprocess.Popen([exe_path, "--config", config_path], cwd=os.path.dirname(exe_path))
+            
+        except Exception as e:
+            QMessageBox.critical(self, tr('error'), f"Failed to launch:\n{e}")
             
             # Launch emulator
             if sys.platform == 'darwin' and exe.endswith('.app'):
