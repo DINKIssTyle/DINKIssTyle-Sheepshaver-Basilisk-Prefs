@@ -21,6 +21,34 @@ A cross-platform GUI application for editing Sheepshaver and Basilisk II emulato
 - **Emulator Launch**: Run emulators directly from the app
 - **Cross-Platform**: Works on Linux, macOS, and Windows
 
+## Internationalization (i18n)
+
+The application supports multiple languages. You can change the language in the **Settings** tab.
+- 🇺🇸 English
+- 🇰🇷 Korean (한국어)
+- 🇨🇳 Chinese (简体中文)
+
+*Note: You need to restart the application to apply language changes.*
+
+## Profile Management
+
+Manage multiple configuration profiles easily for different use cases (e.g., OS 7.x, OS 9, Gaming).
+
+- **Management Button**: Click "Management" (top-right) to open the profile manager.
+- **Filtering**: View profiles for All, Basilisk II, or SheepShaver.
+- **Duplicate**: Quickly clone an existing profile to test new settings safely.
+- **Rename/Delete**: Convert filenames (e.g., `.basilisk_ii_gaming_prefs`) to readable names (e.g., `gaming`) automatically.
+
+## Shader Management
+
+Enhance visual quality with GLSL shaders.
+
+- **Shader Stack**: Add multiple shaders to a stack (e.g., CRT simulation + Coloring).
+- **Parameter Tuning**:
+  - The application parses `#pragma parameter` from GLSL files.
+  - Click the **Gear Icon** next to a shader to adjust parameters (e.g., scanline intensity, blur, curvature) via sliders.
+  - Parameters are saved per-profile.
+
 ## Screenshots
 
 ![screenshot](screenshot.gif)
