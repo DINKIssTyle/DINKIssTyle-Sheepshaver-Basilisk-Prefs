@@ -53,6 +53,8 @@ Enhance visual quality with GLSL shaders.
 
 ![screenshot](screenshot.gif)
 
+![version2b3](version2b3.gif)
+
 ## Requirements
 
 - Python 3.8+
