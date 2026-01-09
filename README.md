@@ -53,7 +53,7 @@ Enhance visual quality with GLSL shaders.
 
 ![screenshot](screenshot.gif)
 
-![version2b3](version2b3.gif)
+![Version2b3](Version2b3.gif)
 
 ## Requirements
 
