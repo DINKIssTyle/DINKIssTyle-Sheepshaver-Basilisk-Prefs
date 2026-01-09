@@ -65,6 +65,555 @@ LEFT_PANEL_CONFIG = {
 
 
 # ============================================================================
+# Translations (i18n)
+# ============================================================================
+
+TRANSLATIONS = {
+    'en': {  # English (Default)
+        'app_title': 'Sheepshaver & Basilisk II Preferences Editor',
+        'basilisk_tab': 'Basilisk II',
+        'sheepshaver_tab': 'Sheepshaver',
+        'settings_tab': 'Settings',
+        'save_all': 'Save All',
+        'reload': 'Reload',
+        'about': 'About',
+        'language': 'Language',
+        'language_section': 'Language',
+        'restart_required': 'Restart required to apply language change.',
+        # Left Panel
+        'default_title_68k': '68k Macintosh',
+        'default_title_ppc': 'PPC Macintosh',
+        'launch_tooltip': 'Click to launch emulator',
+        # Drives Tab
+        'disk_images': 'Disk Images',
+        'disk_image': 'Disk Image',
+        'disabled': 'Disabled',
+        'add': 'Add',
+        'remove': 'Remove',
+        'up': '▲ Up',
+        'down': '▼ Down',
+        'storage_options': 'Storage Options',
+        'extfs_path': 'ExtFS Path:',
+        'rom_file': 'ROM File:',
+        'boot_drive': 'Boot Drive:',
+        'boot_driver': 'Boot Driver:',
+        'disable_cdrom': 'Disable CD-ROM',
+        'browse': 'Browse',
+        # Graphics Tab
+        'display': 'Display',
+        'screen_mode': 'Screen Mode:',
+        'width': 'Width:',
+        'height': 'Height:',
+        'color_depth': 'Color Depth:',
+        'frame_skip': 'Frame Skip:',
+        'sdl_render': 'SDL Render:',
+        'gfx_acceleration': 'GFX Acceleration',
+        'scaling': 'Scaling',
+        'nearest_neighbor': 'Nearest Neighbor',
+        'integer_scaling': 'Integer Scaling',
+        # Sound Tab
+        'audio': 'Audio',
+        'audio_output': 'Audio Output:',
+        'disable_sound': 'Disable Sound',
+        # Network Tab
+        'ethernet': 'Ethernet',
+        'ethernet_mode': 'Ethernet Mode:',
+        'ethernet_port': 'Ethernet Port:',
+        'none': 'None',
+        # CPU/Memory Tab
+        'memory': 'Memory',
+        'ram_size': 'RAM Size:',
+        'cpu': 'CPU',
+        'cpu_type': 'CPU Type:',
+        'model_id': 'Model ID:',
+        'enable_fpu': 'Enable FPU',
+        'cpu_clock': 'CPU Clock (0=auto):',
+        'jit_compiler': 'JIT Compiler',
+        'enable_jit': 'Enable JIT',
+        'jit_fpu': 'JIT FPU',
+        'jit_68k': 'JIT 68K',
+        'cache_size': 'Cache Size (KB):',
+        'lazy_flush': 'Lazy Flush',
+        'inline': 'Inline',
+        'debug': 'Debug',
+        # Input Tab
+        'keyboard': 'Keyboard',
+        'keyboard_type': 'Keyboard Type:',
+        'use_keycodes': 'Use Keycodes',
+        'keycode_file': 'Keycode File:',
+        'hotkey': 'Hotkey:',
+        'swap_opt_cmd': 'Swap Option/Command',
+        'mouse': 'Mouse',
+        'wheel_mode': 'Wheel Mode:',
+        'wheel_lines': 'Wheel Lines:',
+        'initial_grab': 'Initial Grab',
+        'hardware_cursor': 'Hardware Cursor',
+        # Serial Tab
+        'serial_ports': 'Serial Ports',
+        'serial_a': 'Serial A:',
+        'serial_b': 'Serial B:',
+        # Misc Tab
+        'title_model': 'Title & Model',
+        'title': 'Title:',
+        'model': 'Model:',
+        'miscellaneous': 'Miscellaneous',
+        'no_gui': 'No GUI',
+        'no_clip_conversion': 'No Clipboard Conversion',
+        'ignore_segv': 'Ignore SEGV',
+        'ignore_illegal': 'Ignore Illegal Instructions',
+        'idle_wait': 'Idle Wait',
+        'time_offset': 'Time Offset',
+        'year_offset': 'Year Offset:',
+        'day_offset': 'Day Offset:',
+        'encoding': 'Encoding',
+        'name_encoding': 'Name Encoding:',
+        'performance': 'Performance',
+        'delay': 'Delay:',
+        # Settings Tab
+        'executable': 'Executable:',
+        'config_file': 'Config File:',
+        'zap_pram': 'Zap PRAM',
+        'save_settings': 'Save Settings',
+        'settings_saved': 'Settings saved successfully!',
+        # About Dialog
+        'version': 'Version 2.0',
+        'copyright': '© 2026 DINKI\'ssTyle',
+        # Messages
+        'config_saved': 'Configuration saved and reloaded successfully!',
+        'error': 'Error',
+        'save': 'Save',
+        'launch': 'Launch',
+    },
+    'ko': {  # Korean
+        'app_title': 'Sheepshaver & Basilisk II 환경설정 편집기',
+        'basilisk_tab': 'Basilisk II',
+        'sheepshaver_tab': 'Sheepshaver',
+        'settings_tab': '설정',
+        'save_all': '모두 저장',
+        'reload': '새로고침',
+        'about': '정보',
+        'language': '언어',
+        'language_section': '언어',
+        'restart_required': '언어 변경을 적용하려면 재시작이 필요합니다.',
+        'default_title_68k': '68k 매킨토시',
+        'default_title_ppc': 'PPC 매킨토시',
+        'launch_tooltip': '클릭하여 에뮬레이터 실행',
+        'disk_images': '디스크 이미지',
+        'disk_image': '디스크 이미지',
+        'disabled': '비활성화',
+        'add': '추가',
+        'remove': '제거',
+        'up': '▲ 위로',
+        'down': '▼ 아래로',
+        'storage_options': '저장소 옵션',
+        'extfs_path': 'ExtFS 경로:',
+        'rom_file': 'ROM 파일:',
+        'boot_drive': '부트 드라이브:',
+        'boot_driver': '부트 드라이버:',
+        'disable_cdrom': 'CD-ROM 비활성화',
+        'browse': '찾아보기',
+        'display': '디스플레이',
+        'screen_mode': '화면 모드:',
+        'width': '너비:',
+        'height': '높이:',
+        'color_depth': '색상 깊이:',
+        'frame_skip': '프레임 스킵:',
+        'sdl_render': 'SDL 렌더러:',
+        'gfx_acceleration': 'GFX 가속',
+        'scaling': '스케일링',
+        'nearest_neighbor': 'Nearest Neighbor',
+        'integer_scaling': '정수 스케일링',
+        'audio': '오디오',
+        'audio_output': '오디오 출력:',
+        'disable_sound': '사운드 비활성화',
+        'ethernet': '이더넷',
+        'ethernet_mode': '이더넷 모드:',
+        'ethernet_port': '이더넷 포트:',
+        'none': '없음',
+        'memory': '메모리',
+        'ram_size': 'RAM 크기:',
+        'cpu': 'CPU',
+        'cpu_type': 'CPU 종류:',
+        'model_id': '모델 ID:',
+        'enable_fpu': 'FPU 활성화',
+        'cpu_clock': 'CPU 클럭 (0=자동):',
+        'jit_compiler': 'JIT 컴파일러',
+        'enable_jit': 'JIT 활성화',
+        'jit_fpu': 'JIT FPU',
+        'jit_68k': 'JIT 68K',
+        'cache_size': '캐시 크기 (KB):',
+        'lazy_flush': '지연 플러시',
+        'inline': '인라인',
+        'debug': '디버그',
+        'keyboard': '키보드',
+        'keyboard_type': '키보드 종류:',
+        'use_keycodes': '키코드 사용',
+        'keycode_file': '키코드 파일:',
+        'hotkey': '단축키:',
+        'swap_opt_cmd': 'Option/Command 교환',
+        'mouse': '마우스',
+        'wheel_mode': '휠 모드:',
+        'wheel_lines': '휠 라인:',
+        'initial_grab': '시작시 커서 그랩',
+        'hardware_cursor': '하드웨어 커서',
+        'serial_ports': '시리얼 포트',
+        'serial_a': '시리얼 A:',
+        'serial_b': '시리얼 B:',
+        'title_model': '제목 및 모델',
+        'title': '제목:',
+        'model': '모델:',
+        'miscellaneous': '기타',
+        'no_gui': 'GUI 없음',
+        'no_clip_conversion': '클립보드 변환 없음',
+        'ignore_segv': 'SEGV 무시',
+        'ignore_illegal': '잘못된 명령 무시',
+        'idle_wait': '유휴 대기',
+        'time_offset': '시간 오프셋',
+        'year_offset': '연도 오프셋:',
+        'day_offset': '일 오프셋:',
+        'encoding': '인코딩',
+        'name_encoding': '이름 인코딩:',
+        'performance': '성능',
+        'delay': '지연:',
+        'executable': '실행 파일:',
+        'config_file': '설정 파일:',
+        'zap_pram': 'PRAM 초기화',
+        'save_settings': '설정 저장',
+        'settings_saved': '설정이 저장되었습니다!',
+        'version': '버전 2.0',
+        'copyright': '© 2026 DINKI\'ssTyle',
+        'config_saved': '설정이 저장되고 새로고침되었습니다!',
+        'error': '오류',
+        'save': '저장',
+        'launch': '실행',
+    },
+    'zh': {  # Chinese (Simplified)
+        'app_title': 'Sheepshaver & Basilisk II 偏好设置编辑器',
+        'basilisk_tab': 'Basilisk II',
+        'sheepshaver_tab': 'Sheepshaver',
+        'settings_tab': '设置',
+        'save_all': '全部保存',
+        'reload': '重新加载',
+        'about': '关于',
+        'language': '语言',
+        'language_section': '语言',
+        'restart_required': '需要重启以应用语言更改。',
+        'default_title_68k': '68k 麦金塔',
+        'default_title_ppc': 'PPC 麦金塔',
+        'launch_tooltip': '点击启动模拟器',
+        'disk_images': '磁盘镜像',
+        'disk_image': '磁盘镜像',
+        'disabled': '已禁用',
+        'add': '添加',
+        'remove': '删除',
+        'up': '▲ 上移',
+        'down': '▼ 下移',
+        'storage_options': '存储选项',
+        'extfs_path': 'ExtFS 路径:',
+        'rom_file': 'ROM 文件:',
+        'boot_drive': '启动驱动器:',
+        'boot_driver': '启动驱动程序:',
+        'disable_cdrom': '禁用 CD-ROM',
+        'browse': '浏览',
+        'display': '显示',
+        'screen_mode': '屏幕模式:',
+        'width': '宽度:',
+        'height': '高度:',
+        'color_depth': '色深:',
+        'frame_skip': '跳帧:',
+        'sdl_render': 'SDL 渲染器:',
+        'gfx_acceleration': '图形加速',
+        'scaling': '缩放',
+        'nearest_neighbor': '最近邻',
+        'integer_scaling': '整数缩放',
+        'audio': '音频',
+        'audio_output': '音频输出:',
+        'disable_sound': '禁用声音',
+        'ethernet': '以太网',
+        'ethernet_mode': '以太网模式:',
+        'ethernet_port': '以太网端口:',
+        'none': '无',
+        'memory': '内存',
+        'ram_size': 'RAM 大小:',
+        'cpu': 'CPU',
+        'cpu_type': 'CPU 类型:',
+        'model_id': '型号 ID:',
+        'enable_fpu': '启用 FPU',
+        'cpu_clock': 'CPU 时钟 (0=自动):',
+        'jit_compiler': 'JIT 编译器',
+        'enable_jit': '启用 JIT',
+        'jit_fpu': 'JIT FPU',
+        'jit_68k': 'JIT 68K',
+        'cache_size': '缓存大小 (KB):',
+        'lazy_flush': '延迟刷新',
+        'inline': '内联',
+        'debug': '调试',
+        'keyboard': '键盘',
+        'keyboard_type': '键盘类型:',
+        'use_keycodes': '使用键码',
+        'keycode_file': '键码文件:',
+        'hotkey': '热键:',
+        'swap_opt_cmd': '交换 Option/Command',
+        'mouse': '鼠标',
+        'wheel_mode': '滚轮模式:',
+        'wheel_lines': '滚轮行数:',
+        'initial_grab': '初始抓取',
+        'hardware_cursor': '硬件光标',
+        'serial_ports': '串行端口',
+        'serial_a': '串行 A:',
+        'serial_b': '串行 B:',
+        'title_model': '标题和型号',
+        'title': '标题:',
+        'model': '型号:',
+        'miscellaneous': '杂项',
+        'no_gui': '无 GUI',
+        'no_clip_conversion': '无剪贴板转换',
+        'ignore_segv': '忽略 SEGV',
+        'ignore_illegal': '忽略非法指令',
+        'idle_wait': '空闲等待',
+        'time_offset': '时间偏移',
+        'year_offset': '年份偏移:',
+        'day_offset': '日期偏移:',
+        'encoding': '编码',
+        'name_encoding': '名称编码:',
+        'performance': '性能',
+        'delay': '延迟:',
+        'executable': '可执行文件:',
+        'config_file': '配置文件:',
+        'zap_pram': '清除 PRAM',
+        'save_settings': '保存设置',
+        'settings_saved': '设置已保存!',
+        'version': '版本 2.0',
+        'copyright': '© 2026 DINKI\'ssTyle',
+        'config_saved': '配置已保存并重新加载!',
+        'error': '错误',
+        'save': '保存',
+        'launch': '启动',
+    },
+    'ja': {  # Japanese
+        'app_title': 'Sheepshaver & Basilisk II 環境設定エディタ',
+        'basilisk_tab': 'Basilisk II',
+        'sheepshaver_tab': 'Sheepshaver',
+        'settings_tab': '設定',
+        'save_all': 'すべて保存',
+        'reload': '再読み込み',
+        'about': 'について',
+        'language': '言語',
+        'language_section': '言語',
+        'restart_required': '言語変更を適用するには再起動が必要です。',
+        'default_title_68k': '68k Macintosh',
+        'default_title_ppc': 'PPC Macintosh',
+        'launch_tooltip': 'クリックしてエミュレータを起動',
+        'disk_images': 'ディスクイメージ',
+        'disk_image': 'ディスクイメージ',
+        'disabled': '無効',
+        'add': '追加',
+        'remove': '削除',
+        'up': '▲ 上へ',
+        'down': '▼ 下へ',
+        'storage_options': 'ストレージオプション',
+        'extfs_path': 'ExtFS パス:',
+        'rom_file': 'ROM ファイル:',
+        'boot_drive': 'ブートドライブ:',
+        'boot_driver': 'ブートドライバ:',
+        'disable_cdrom': 'CD-ROM を無効にする',
+        'browse': '参照',
+        'display': 'ディスプレイ',
+        'screen_mode': '画面モード:',
+        'width': '幅:',
+        'height': '高さ:',
+        'color_depth': '色深度:',
+        'frame_skip': 'フレームスキップ:',
+        'sdl_render': 'SDL レンダラー:',
+        'gfx_acceleration': 'GFX アクセラレーション',
+        'scaling': 'スケーリング',
+        'nearest_neighbor': 'ニアレストネイバー',
+        'integer_scaling': '整数スケーリング',
+        'audio': 'オーディオ',
+        'audio_output': 'オーディオ出力:',
+        'disable_sound': 'サウンドを無効にする',
+        'ethernet': 'イーサネット',
+        'ethernet_mode': 'イーサネットモード:',
+        'ethernet_port': 'イーサネットポート:',
+        'none': 'なし',
+        'memory': 'メモリ',
+        'ram_size': 'RAM サイズ:',
+        'cpu': 'CPU',
+        'cpu_type': 'CPU タイプ:',
+        'model_id': 'モデル ID:',
+        'enable_fpu': 'FPU を有効にする',
+        'cpu_clock': 'CPU クロック (0=自動):',
+        'jit_compiler': 'JIT コンパイラ',
+        'enable_jit': 'JIT を有効にする',
+        'jit_fpu': 'JIT FPU',
+        'jit_68k': 'JIT 68K',
+        'cache_size': 'キャッシュサイズ (KB):',
+        'lazy_flush': '遅延フラッシュ',
+        'inline': 'インライン',
+        'debug': 'デバッグ',
+        'keyboard': 'キーボード',
+        'keyboard_type': 'キーボードタイプ:',
+        'use_keycodes': 'キーコードを使用',
+        'keycode_file': 'キーコードファイル:',
+        'hotkey': 'ホットキー:',
+        'swap_opt_cmd': 'Option/Command を交換',
+        'mouse': 'マウス',
+        'wheel_mode': 'ホイールモード:',
+        'wheel_lines': 'ホイール行数:',
+        'initial_grab': '初期グラブ',
+        'hardware_cursor': 'ハードウェアカーソル',
+        'serial_ports': 'シリアルポート',
+        'serial_a': 'シリアル A:',
+        'serial_b': 'シリアル B:',
+        'title_model': 'タイトルとモデル',
+        'title': 'タイトル:',
+        'model': 'モデル:',
+        'miscellaneous': 'その他',
+        'no_gui': 'GUI なし',
+        'no_clip_conversion': 'クリップボード変換なし',
+        'ignore_segv': 'SEGV を無視',
+        'ignore_illegal': '不正な命令を無視',
+        'idle_wait': 'アイドル待機',
+        'time_offset': '時間オフセット',
+        'year_offset': '年オフセット:',
+        'day_offset': '日オフセット:',
+        'encoding': 'エンコーディング',
+        'name_encoding': '名前エンコーディング:',
+        'performance': 'パフォーマンス',
+        'delay': '遅延:',
+        'executable': '実行ファイル:',
+        'config_file': '設定ファイル:',
+        'zap_pram': 'PRAM をクリア',
+        'save_settings': '設定を保存',
+        'settings_saved': '設定が保存されました!',
+        'version': 'バージョン 2.0',
+        'copyright': '© 2026 DINKI\'ssTyle',
+        'config_saved': '設定が保存され、再読み込みされました!',
+        'error': 'エラー',
+        'save': '保存',
+        'launch': '起動',
+    },
+    'es': {  # Spanish
+        'app_title': 'Editor de Preferencias de Sheepshaver y Basilisk II',
+        'basilisk_tab': 'Basilisk II',
+        'sheepshaver_tab': 'Sheepshaver',
+        'settings_tab': 'Configuración',
+        'save_all': 'Guardar Todo',
+        'reload': 'Recargar',
+        'about': 'Acerca de',
+        'language': 'Idioma',
+        'language_section': 'Idioma',
+        'restart_required': 'Se requiere reiniciar para aplicar el cambio de idioma.',
+        'default_title_68k': '68k Macintosh',
+        'default_title_ppc': 'PPC Macintosh',
+        'launch_tooltip': 'Haga clic para iniciar el emulador',
+        'disk_images': 'Imágenes de Disco',
+        'disk_image': 'Imagen de Disco',
+        'disabled': 'Deshabilitado',
+        'add': 'Agregar',
+        'remove': 'Eliminar',
+        'up': '▲ Arriba',
+        'down': '▼ Abajo',
+        'storage_options': 'Opciones de Almacenamiento',
+        'extfs_path': 'Ruta ExtFS:',
+        'rom_file': 'Archivo ROM:',
+        'boot_drive': 'Unidad de Arranque:',
+        'boot_driver': 'Controlador de Arranque:',
+        'disable_cdrom': 'Deshabilitar CD-ROM',
+        'browse': 'Examinar',
+        'display': 'Pantalla',
+        'screen_mode': 'Modo de Pantalla:',
+        'width': 'Ancho:',
+        'height': 'Alto:',
+        'color_depth': 'Profundidad de Color:',
+        'frame_skip': 'Salto de Cuadros:',
+        'sdl_render': 'Renderizador SDL:',
+        'gfx_acceleration': 'Aceleración GFX',
+        'scaling': 'Escalado',
+        'nearest_neighbor': 'Vecino más Cercano',
+        'integer_scaling': 'Escalado Entero',
+        'audio': 'Audio',
+        'audio_output': 'Salida de Audio:',
+        'disable_sound': 'Deshabilitar Sonido',
+        'ethernet': 'Ethernet',
+        'ethernet_mode': 'Modo Ethernet:',
+        'ethernet_port': 'Puerto Ethernet:',
+        'none': 'Ninguno',
+        'memory': 'Memoria',
+        'ram_size': 'Tamaño de RAM:',
+        'cpu': 'CPU',
+        'cpu_type': 'Tipo de CPU:',
+        'model_id': 'ID de Modelo:',
+        'enable_fpu': 'Habilitar FPU',
+        'cpu_clock': 'Reloj CPU (0=auto):',
+        'jit_compiler': 'Compilador JIT',
+        'enable_jit': 'Habilitar JIT',
+        'jit_fpu': 'JIT FPU',
+        'jit_68k': 'JIT 68K',
+        'cache_size': 'Tamaño de Caché (KB):',
+        'lazy_flush': 'Vaciado Diferido',
+        'inline': 'En Línea',
+        'debug': 'Depurar',
+        'keyboard': 'Teclado',
+        'keyboard_type': 'Tipo de Teclado:',
+        'use_keycodes': 'Usar Códigos de Tecla',
+        'keycode_file': 'Archivo de Códigos:',
+        'hotkey': 'Tecla de Acceso:',
+        'swap_opt_cmd': 'Intercambiar Option/Command',
+        'mouse': 'Ratón',
+        'wheel_mode': 'Modo de Rueda:',
+        'wheel_lines': 'Líneas de Rueda:',
+        'initial_grab': 'Captura Inicial',
+        'hardware_cursor': 'Cursor de Hardware',
+        'serial_ports': 'Puertos Serie',
+        'serial_a': 'Serie A:',
+        'serial_b': 'Serie B:',
+        'title_model': 'Título y Modelo',
+        'title': 'Título:',
+        'model': 'Modelo:',
+        'miscellaneous': 'Miscelánea',
+        'no_gui': 'Sin GUI',
+        'no_clip_conversion': 'Sin Conversión de Portapapeles',
+        'ignore_segv': 'Ignorar SEGV',
+        'ignore_illegal': 'Ignorar Instrucciones Ilegales',
+        'idle_wait': 'Espera Inactiva',
+        'time_offset': 'Desfase de Tiempo',
+        'year_offset': 'Desfase de Año:',
+        'day_offset': 'Desfase de Día:',
+        'encoding': 'Codificación',
+        'name_encoding': 'Codificación de Nombre:',
+        'performance': 'Rendimiento',
+        'delay': 'Retraso:',
+        'executable': 'Ejecutable:',
+        'config_file': 'Archivo de Configuración:',
+        'zap_pram': 'Borrar PRAM',
+        'save_settings': 'Guardar Configuración',
+        'settings_saved': '¡Configuración guardada!',
+        'version': 'Versión 2.0',
+        'copyright': '© 2026 DINKI\'ssTyle',
+        'config_saved': '¡Configuración guardada y recargada!',
+        'error': 'Error',
+        'save': 'Guardar',
+        'launch': 'Iniciar',
+    },
+}
+
+# Language names for display (in their native language)
+LANGUAGE_NAMES = {
+    'en': 'English',
+    'ko': '한국어',
+    'zh': '中文',
+    'ja': '日本語',
+    'es': 'Español',
+}
+
+def tr(key):
+    """Get translated string for current language."""
+    lang = QSettings('DINKIssTyle', 'EmulatorPrefs').value('language', 'en')
+    return TRANSLATIONS.get(lang, TRANSLATIONS['en']).get(key, key)
+
+
+# ============================================================================
 # Configuration Parser
 # ============================================================================
 
@@ -156,12 +705,12 @@ class DrivesTab(QWidget):
         layout = QVBoxLayout(self)
         
         # Disk Images Group
-        disk_group = QGroupBox("Disk Images")
+        disk_group = QGroupBox(tr('disk_images'))
         disk_layout = QVBoxLayout(disk_group)
         
         self.disk_table = QTableWidget()
         self.disk_table.setColumnCount(2)
-        self.disk_table.setHorizontalHeaderLabels(["Disk Image", "Disabled"])
+        self.disk_table.setHorizontalHeaderLabels([tr('disk_image'), tr('disabled')])
         self.disk_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.disk_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.disk_table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -173,10 +722,10 @@ class DrivesTab(QWidget):
         # self.disk_table.setMaximumHeight(100)
         
         btn_layout = QHBoxLayout()
-        self.btn_add = QPushButton("Add")
-        self.btn_remove = QPushButton("Remove")
-        self.btn_up = QPushButton("▲ Up")
-        self.btn_down = QPushButton("▼ Down")
+        self.btn_add = QPushButton(tr('add'))
+        self.btn_remove = QPushButton(tr('remove'))
+        self.btn_up = QPushButton(tr('up'))
+        self.btn_down = QPushButton(tr('down'))
         
         self.btn_add.clicked.connect(self.add_disk)
         self.btn_remove.clicked.connect(self.remove_disk)
@@ -193,41 +742,41 @@ class DrivesTab(QWidget):
         layout.addWidget(disk_group)
         
         # Other Storage Options - Grid Layout
-        storage_group = QGroupBox("Storage Options")
+        storage_group = QGroupBox(tr('storage_options'))
         storage_layout = QGridLayout(storage_group)
         
         # Row 0: ExtFS
-        storage_layout.addWidget(QLabel("ExtFS Path:"), 0, 0)
+        storage_layout.addWidget(QLabel(tr('extfs_path')), 0, 0)
         extfs_layout = QHBoxLayout()
         self.extfs_edit = QLineEdit()
-        extfs_btn = QPushButton("Browse")
+        extfs_btn = QPushButton(tr('browse'))
         extfs_btn.clicked.connect(lambda: self.browse_dir(self.extfs_edit))
         extfs_layout.addWidget(self.extfs_edit)
         extfs_layout.addWidget(extfs_btn)
         storage_layout.addLayout(extfs_layout, 0, 1, 1, 5)
         
         # Row 1: ROM
-        storage_layout.addWidget(QLabel("ROM File:"), 1, 0)
+        storage_layout.addWidget(QLabel(tr('rom_file')), 1, 0)
         rom_layout = QHBoxLayout()
         self.rom_edit = QLineEdit()
-        rom_btn = QPushButton("Browse")
+        rom_btn = QPushButton(tr('browse'))
         rom_btn.clicked.connect(lambda: self.browse_file(self.rom_edit, "ROM Files (*.rom);;All Files (*)"))
         rom_layout.addWidget(self.rom_edit)
         rom_layout.addWidget(rom_btn)
         storage_layout.addLayout(rom_layout, 1, 1, 1, 5)
         
         # Row 2: Boot Drive | Boot Driver | Disable CD-ROM
-        storage_layout.addWidget(QLabel("Boot Drive:"), 2, 0)
+        storage_layout.addWidget(QLabel(tr('boot_drive')), 2, 0)
         self.boot_drive = QSpinBox()
         self.boot_drive.setRange(0, 255)
         storage_layout.addWidget(self.boot_drive, 2, 1)
         
-        storage_layout.addWidget(QLabel("Boot Driver:"), 2, 2)
+        storage_layout.addWidget(QLabel(tr('boot_driver')), 2, 2)
         self.boot_driver = QSpinBox()
         self.boot_driver.setRange(0, 255)
         storage_layout.addWidget(self.boot_driver, 2, 3)
         
-        self.no_cdrom = QCheckBox("Disable CD-ROM")
+        self.no_cdrom = QCheckBox(tr('disable_cdrom'))
         storage_layout.addWidget(self.no_cdrom, 2, 4, 1, 2)
         
         # Set column stretch
@@ -351,46 +900,46 @@ class GraphicsTab(QWidget):
         layout = QVBoxLayout(self)
         
         # Display Group - Grid layout
-        display_group = QGroupBox("Display")
+        display_group = QGroupBox(tr('display'))
         display_layout = QGridLayout(display_group)
         
         # Row 0: Screen Mode
-        display_layout.addWidget(QLabel("Screen Mode:"), 0, 0)
+        display_layout.addWidget(QLabel(tr('screen_mode')), 0, 0)
         self.screen_mode = QComboBox()
         self.screen_mode.addItems(["win", "dga", "full"])
         display_layout.addWidget(self.screen_mode, 0, 1, 1, 5)
         
         # Row 1: Width | Height | Color Depth
-        display_layout.addWidget(QLabel("Width:"), 1, 0)
+        display_layout.addWidget(QLabel(tr('width')), 1, 0)
         self.screen_width = QSpinBox()
         self.screen_width.setRange(320, 3840)
         self.screen_width.setValue(800)
         display_layout.addWidget(self.screen_width, 1, 1)
         
-        display_layout.addWidget(QLabel("Height:"), 1, 2)
+        display_layout.addWidget(QLabel(tr('height')), 1, 2)
         self.screen_height = QSpinBox()
         self.screen_height.setRange(240, 2160)
         self.screen_height.setValue(600)
         display_layout.addWidget(self.screen_height, 1, 3)
         
-        display_layout.addWidget(QLabel("Color Depth:"), 1, 4)
+        display_layout.addWidget(QLabel(tr('color_depth')), 1, 4)
         self.color_depth = QComboBox()
         self.color_depth.addItems(["0 (Default)", "8", "16", "24", "32"])
         display_layout.addWidget(self.color_depth, 1, 5)
         
         # Row 2: Frame Skip | SDL Render (moved from Performance and Renderer)
-        display_layout.addWidget(QLabel("Frame Skip:"), 2, 0)
+        display_layout.addWidget(QLabel(tr('frame_skip')), 2, 0)
         self.frameskip = QSpinBox()
         self.frameskip.setRange(0, 60)
         display_layout.addWidget(self.frameskip, 2, 1)
         
-        display_layout.addWidget(QLabel("SDL Render:"), 2, 2)
+        display_layout.addWidget(QLabel(tr('sdl_render')), 2, 2)
         self.sdl_render = QComboBox()
         self.sdl_render.addItems(["software", "opengl", "opengles", "opengles2", "metal"])
         display_layout.addWidget(self.sdl_render, 2, 3, 1, 3)
         
         # GFX Acceleration (Sheepshaver only)
-        self.gfx_accel = QCheckBox("GFX Acceleration")
+        self.gfx_accel = QCheckBox(tr('gfx_acceleration'))
         if self.emulator_type == 'sheepshaver':
             display_layout.addWidget(self.gfx_accel, 3, 0, 1, 2)
         
@@ -402,14 +951,14 @@ class GraphicsTab(QWidget):
         layout.addWidget(display_group)
         
         # Scaling Group - Grid layout
-        scale_group = QGroupBox("Scaling")
+        scale_group = QGroupBox(tr('scaling'))
         scale_layout = QGridLayout(scale_group)
         
         # Row 0: Nearest Neighbor | Integer Scaling
-        self.scale_nearest = QCheckBox("Nearest Neighbor")
+        self.scale_nearest = QCheckBox(tr('nearest_neighbor'))
         scale_layout.addWidget(self.scale_nearest, 0, 0)
         
-        self.scale_integer = QCheckBox("Integer Scaling")
+        self.scale_integer = QCheckBox(tr('integer_scaling'))
         scale_layout.addWidget(self.scale_integer, 0, 1)
         
         # Row 1: Magnification
@@ -480,10 +1029,10 @@ class SoundTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
-        sound_group = QGroupBox("Sound Settings")
+        sound_group = QGroupBox(tr('audio'))
         sound_layout = QFormLayout(sound_group)
         
-        self.no_sound = QCheckBox("Disable Sound")
+        self.no_sound = QCheckBox(tr('disable_sound'))
         sound_layout.addRow("", self.no_sound)
         
         self.sound_buffer = QSpinBox()
@@ -525,13 +1074,13 @@ class NetworkTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
-        net_group = QGroupBox("Network Settings")
+        net_group = QGroupBox(tr('ethernet'))
         net_layout = QFormLayout(net_group)
         
         self.ether_mode = QComboBox()
         self.ether_mode.addItems(["slirp", "none", "tap", "sheep_net"])
         self.ether_mode.setEditable(True)
-        net_layout.addRow("Ethernet:", self.ether_mode)
+        net_layout.addRow(tr('ethernet_mode'), self.ether_mode)
         
         if self.emulator_type == 'basilisk':
             self.udp_tunnel = QCheckBox("Enable")
@@ -609,7 +1158,7 @@ class CpuMemoryTab(QWidget):
         layout = QVBoxLayout(self)
         
         # Memory Group
-        mem_group = QGroupBox("Memory")
+        mem_group = QGroupBox(tr('memory'))
         mem_layout = QFormLayout(mem_group)
         
         self.ram_size = QComboBox()
@@ -625,18 +1174,18 @@ class CpuMemoryTab(QWidget):
         ]
         for name, size in ram_sizes:
             self.ram_size.addItem(name, size)
-        mem_layout.addRow("RAM Size:", self.ram_size)
+        mem_layout.addRow(tr('ram_size'), self.ram_size)
         
         layout.addWidget(mem_group)
         
         # CPU Group (Basilisk specific)
         if self.emulator_type == 'basilisk':
-            cpu_group = QGroupBox("CPU")
+            cpu_group = QGroupBox(tr('cpu'))
             cpu_layout = QFormLayout(cpu_group)
             
             self.cpu_type = QComboBox()
             self.cpu_type.addItems(["68020", "68030", "68040"])
-            cpu_layout.addRow("CPU Type:", self.cpu_type)
+            cpu_layout.addRow(tr('cpu_type'), self.cpu_type)
             
             self.model_id = QComboBox()
             models = [
@@ -650,35 +1199,35 @@ class CpuMemoryTab(QWidget):
             ]
             for name, mid in models:
                 self.model_id.addItem(name, mid)
-            cpu_layout.addRow("Model ID:", self.model_id)
+            cpu_layout.addRow(tr('model_id'), self.model_id)
             
-            self.fpu_enabled = QCheckBox("Enable FPU")
+            self.fpu_enabled = QCheckBox(tr('enable_fpu'))
             cpu_layout.addRow("", self.fpu_enabled)
             
             layout.addWidget(cpu_group)
         
         # Sheepshaver CPU options
         if self.emulator_type == 'sheepshaver':
-            cpu_group = QGroupBox("CPU")
+            cpu_group = QGroupBox(tr('cpu'))
             cpu_layout = QFormLayout(cpu_group)
             
             self.cpu_clock = QSpinBox()
             self.cpu_clock.setRange(0, 10000)
-            cpu_layout.addRow("CPU Clock (0=auto):", self.cpu_clock)
+            cpu_layout.addRow(tr('cpu_clock'), self.cpu_clock)
             
             layout.addWidget(cpu_group)
         
         # JIT Group - 2 column layout
-        jit_group = QGroupBox("JIT Compiler")
+        jit_group = QGroupBox(tr('jit_compiler'))
         jit_layout = QGridLayout(jit_group)
         
-        self.jit_enabled = QCheckBox("Enable JIT")
+        self.jit_enabled = QCheckBox(tr('enable_jit'))
         
         if self.emulator_type == 'basilisk':
-            self.jit_fpu = QCheckBox("JIT FPU")
-            self.jit_lazy_flush = QCheckBox("Lazy Flush")
-            self.jit_inline = QCheckBox("Inline")
-            self.jit_debug = QCheckBox("Debug")
+            self.jit_fpu = QCheckBox(tr('jit_fpu'))
+            self.jit_lazy_flush = QCheckBox(tr('lazy_flush'))
+            self.jit_inline = QCheckBox(tr('inline'))
+            self.jit_debug = QCheckBox(tr('debug'))
             
             self.jit_cache_size = QSpinBox()
             self.jit_cache_size.setRange(0, 65536)
@@ -688,7 +1237,7 @@ class CpuMemoryTab(QWidget):
             jit_layout.addWidget(self.jit_enabled, 0, 0)
             jit_layout.addWidget(self.jit_fpu, 0, 1)
             # Row 1: Cache Size label | Cache Size spinbox | Lazy Flush
-            jit_layout.addWidget(QLabel("Cache Size (KB):"), 1, 0)
+            jit_layout.addWidget(QLabel(tr('cache_size')), 1, 0)
             jit_layout.addWidget(self.jit_cache_size, 1, 1)
             # Row 2: Lazy Flush | Inline
             jit_layout.addWidget(self.jit_lazy_flush, 2, 0)
@@ -697,7 +1246,7 @@ class CpuMemoryTab(QWidget):
             jit_layout.addWidget(self.jit_debug, 3, 0)
         
         if self.emulator_type == 'sheepshaver':
-            self.jit_68k = QCheckBox("JIT 68K")
+            self.jit_68k = QCheckBox(tr('jit_68k'))
             # Row 0: Enable JIT | JIT 68K
             jit_layout.addWidget(self.jit_enabled, 0, 0)
             jit_layout.addWidget(self.jit_68k, 0, 1)
@@ -771,7 +1320,7 @@ class InputTab(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         
         # Keyboard Group
-        km_group = QGroupBox("Keyboard")
+        km_group = QGroupBox(tr('keyboard'))
         kb_layout = QFormLayout(km_group)
         
         self.kb_type = QComboBox()
@@ -784,18 +1333,18 @@ class InputTab(QWidget):
         ]
         for name, val in kb_types:
             self.kb_type.addItem(name, val)
-        kb_layout.addRow("Keyboard Type:", self.kb_type)
+        kb_layout.addRow(tr('keyboard_type'), self.kb_type)
         
-        self.keycodes = QCheckBox("Use Keycodes")
+        self.keycodes = QCheckBox(tr('use_keycodes'))
         kb_layout.addRow("", self.keycodes)
         
         keycode_layout = QHBoxLayout()
         self.keycode_file = QLineEdit()
-        keycode_btn = QPushButton("Browse")
+        keycode_btn = QPushButton(tr('browse'))
         keycode_btn.clicked.connect(self.browse_keycode_file)
         keycode_layout.addWidget(self.keycode_file)
         keycode_layout.addWidget(keycode_btn)
-        kb_layout.addRow("Keycode File:", keycode_layout)
+        kb_layout.addRow(tr('keycode_file'), keycode_layout)
         
         self.hotkey = QComboBox()
         hotkeys = [
@@ -809,35 +1358,35 @@ class InputTab(QWidget):
         ]
         for name, val in hotkeys:
             self.hotkey.addItem(name, val)
-        kb_layout.addRow("Hotkey:", self.hotkey)
+        kb_layout.addRow(tr('hotkey'), self.hotkey)
         
-        self.swap_opt_cmd = QCheckBox("Swap Option/Command")
+        self.swap_opt_cmd = QCheckBox(tr('swap_opt_cmd'))
         kb_layout.addRow("", self.swap_opt_cmd)
         
         layout.addWidget(km_group)
         
         # Mouse Group - 2 column layout
-        mouse_group = QGroupBox("Mouse")
+        mouse_group = QGroupBox(tr('mouse'))
         mouse_layout = QGridLayout(mouse_group)
         
         # Row 0: Wheel Mode | Wheel Lines
-        mouse_layout.addWidget(QLabel("Wheel Mode:"), 0, 0)
+        mouse_layout.addWidget(QLabel(tr('wheel_mode')), 0, 0)
         self.mouse_wheel_mode = QComboBox()
         self.mouse_wheel_mode.addItem("Page Up/Down", 0)
         self.mouse_wheel_mode.addItem("Cursor Up/Down", 1)
         mouse_layout.addWidget(self.mouse_wheel_mode, 0, 1)
         
-        mouse_layout.addWidget(QLabel("Wheel Lines:"), 0, 2)
+        mouse_layout.addWidget(QLabel(tr('wheel_lines')), 0, 2)
         self.mouse_wheel_lines = QSpinBox()
         self.mouse_wheel_lines.setRange(1, 20)
         mouse_layout.addWidget(self.mouse_wheel_lines, 0, 3)
         
         # Row 1: Checkboxes
-        self.init_grab = QCheckBox("Initial Grab")
+        self.init_grab = QCheckBox(tr('initial_grab'))
         mouse_layout.addWidget(self.init_grab, 1, 0, 1, 2)
         
         if self.emulator_type == 'sheepshaver':
-            self.hard_cursor = QCheckBox("Hardware Cursor")
+            self.hard_cursor = QCheckBox(tr('hardware_cursor'))
             mouse_layout.addWidget(self.hard_cursor, 1, 2, 1, 2)
         
         # Set column stretch
@@ -913,15 +1462,15 @@ class SerialTab(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         
         # Serial Ports - 2 column layout
-        serial_group = QGroupBox("Serial Ports")
+        serial_group = QGroupBox(tr('serial_ports'))
         serial_layout = QGridLayout(serial_group)
         
-        serial_layout.addWidget(QLabel("Serial A:"), 0, 0)
+        serial_layout.addWidget(QLabel(tr('serial_a')), 0, 0)
         self.serial_a = QLineEdit()
         self.serial_a.setPlaceholderText("/dev/ttyS0")
         serial_layout.addWidget(self.serial_a, 0, 1)
         
-        serial_layout.addWidget(QLabel("Serial B:"), 0, 2)
+        serial_layout.addWidget(QLabel(tr('serial_b')), 0, 2)
         self.serial_b = QLineEdit()
         self.serial_b.setPlaceholderText("/dev/ttyS1")
         serial_layout.addWidget(self.serial_b, 0, 3)
@@ -1007,17 +1556,17 @@ class MiscTab(QWidget):
         layout = QVBoxLayout(self)
         
         # Title Group - 2 column layout
-        title_group = QGroupBox("Machine Info")
+        title_group = QGroupBox(tr('title_model'))
         title_layout = QGridLayout(title_group)
         
         # Title
-        title_layout.addWidget(QLabel("Title:"), 0, 0)
+        title_layout.addWidget(QLabel(tr('title')), 0, 0)
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("My Macintosh")
         title_layout.addWidget(self.title_edit, 0, 1)
         
         # Model dropdown
-        title_layout.addWidget(QLabel("Model:"), 0, 2)
+        title_layout.addWidget(QLabel(tr('model')), 0, 2)
         self.model_combo = QComboBox()
         for display_name, value in self.model_list:
             self.model_combo.addItem(display_name, value)
@@ -1031,16 +1580,16 @@ class MiscTab(QWidget):
         layout.addWidget(title_group)
         
         # Miscellaneous Group - 2 column layout
-        misc_group = QGroupBox("Miscellaneous")
+        misc_group = QGroupBox(tr('miscellaneous'))
         misc_layout = QGridLayout(misc_group)
         
-        self.no_gui = QCheckBox("No GUI")
-        self.no_clip_conversion = QCheckBox("No Clipboard Conversion")
-        self.ignore_segv = QCheckBox("Ignore SEGV")
-        self.idle_wait = QCheckBox("Idle Wait")
+        self.no_gui = QCheckBox(tr('no_gui'))
+        self.no_clip_conversion = QCheckBox(tr('no_clip_conversion'))
+        self.ignore_segv = QCheckBox(tr('ignore_segv'))
+        self.idle_wait = QCheckBox(tr('idle_wait'))
         
         if self.emulator_type == 'sheepshaver':
-            self.ignore_illegal = QCheckBox("Ignore Illegal Instructions")
+            self.ignore_illegal = QCheckBox(tr('ignore_illegal'))
             # Sheepshaver: 3 + 2 layout
             misc_layout.addWidget(self.no_gui, 0, 0)
             misc_layout.addWidget(self.no_clip_conversion, 0, 1)
@@ -1057,15 +1606,15 @@ class MiscTab(QWidget):
         layout.addWidget(misc_group)
         
         # Time offset - 2 column layout
-        time_group = QGroupBox("Time Offset")
+        time_group = QGroupBox(tr('time_offset'))
         time_layout = QGridLayout(time_group)
         
-        time_layout.addWidget(QLabel("Year Offset:"), 0, 0)
+        time_layout.addWidget(QLabel(tr('year_offset')), 0, 0)
         self.year_offset = QSpinBox()
         self.year_offset.setRange(-100, 100)
         time_layout.addWidget(self.year_offset, 0, 1)
         
-        time_layout.addWidget(QLabel("Day Offset:"), 0, 2)
+        time_layout.addWidget(QLabel(tr('day_offset')), 0, 2)
         self.day_offset = QSpinBox()
         self.day_offset.setRange(-365, 365)
         time_layout.addWidget(self.day_offset, 0, 3)
@@ -1077,7 +1626,7 @@ class MiscTab(QWidget):
         layout.addWidget(time_group)
         
         # Encoding
-        enc_group = QGroupBox("Encoding")
+        enc_group = QGroupBox(tr('encoding'))
         enc_layout = QFormLayout(enc_group)
         
         self.name_encoding = QComboBox()
@@ -1095,17 +1644,17 @@ class MiscTab(QWidget):
         for name, value in encodings:
             self.name_encoding.addItem(name, value)
             
-        enc_layout.addRow("Name Encoding:", self.name_encoding)
+        enc_layout.addRow(tr('name_encoding'), self.name_encoding)
         
         layout.addWidget(enc_group)
         
         if self.emulator_type == 'basilisk':
-            delay_group = QGroupBox("Performance")
+            delay_group = QGroupBox(tr('performance'))
             delay_layout = QFormLayout(delay_group)
             
             self.delay = QSpinBox()
             self.delay.setRange(0, 1000)
-            delay_layout.addRow("Delay:", self.delay)
+            delay_layout.addRow(tr('delay'), self.delay)
             
             layout.addWidget(delay_group)
         
@@ -1301,7 +1850,7 @@ class LeftPanel(QWidget):
         self.power_btn.setFixedSize(cfg['power_btn_width'], cfg['power_btn_height'])
         self.power_btn.setAlignment(Qt.AlignCenter)
         self.power_btn.setCursor(Qt.PointingHandCursor)
-        self.power_btn.setToolTip("Click to launch emulator")
+        self.power_btn.setToolTip(tr('launch_tooltip'))
         
         # Load power switch image
         power_img_name = "68k_pwrsw.png" if self.emulator_type == 'basilisk' else "ppc_pwrsw.png"
@@ -1360,9 +1909,9 @@ class LeftPanel(QWidget):
     
     def _get_default_title(self):
         if self.emulator_type == 'basilisk':
-            return "68k Macintosh"
+            return tr('default_title_68k')
         else:
-            return "PPC Macintosh"
+            return tr('default_title_ppc')
     
     def set_title(self, title: str):
         """Set the title label text."""
@@ -1529,27 +2078,44 @@ class SettingsTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
+        # Language Settings
+        lang_group = QGroupBox(tr('language_section'))
+        lang_layout = QFormLayout(lang_group)
+        
+        self.language_combo = QComboBox()
+        for lang_code, lang_name in LANGUAGE_NAMES.items():
+            self.language_combo.addItem(lang_name, lang_code)
+        self.language_combo.currentIndexChanged.connect(self._on_language_changed)
+        lang_layout.addRow(tr('language') + ":", self.language_combo)
+        
+        self.restart_label = QLabel(tr('restart_required'))
+        self.restart_label.setStyleSheet("color: #E07020; font-style: italic;")
+        self.restart_label.hide()
+        lang_layout.addRow("", self.restart_label)
+        
+        layout.addWidget(lang_group)
+        
         # Basilisk II Settings
         basilisk_group = QGroupBox("Basilisk II")
         basilisk_layout = QFormLayout(basilisk_group)
         
         basilisk_exe_layout = QHBoxLayout()
         self.basilisk_exe = QLineEdit()
-        basilisk_exe_btn = QPushButton("Browse")
+        basilisk_exe_btn = QPushButton(tr('browse'))
         basilisk_exe_btn.clicked.connect(lambda: self.browse_exe(self.basilisk_exe))
         basilisk_exe_layout.addWidget(self.basilisk_exe)
         basilisk_exe_layout.addWidget(basilisk_exe_btn)
-        basilisk_layout.addRow("Executable:", basilisk_exe_layout)
+        basilisk_layout.addRow(tr('executable'), basilisk_exe_layout)
         
         basilisk_cfg_layout = QHBoxLayout()
         self.basilisk_cfg = QLineEdit()
-        basilisk_cfg_btn = QPushButton("Browse")
+        basilisk_cfg_btn = QPushButton(tr('browse'))
         basilisk_cfg_btn.clicked.connect(lambda: self.browse_file(self.basilisk_cfg))
         basilisk_cfg_layout.addWidget(self.basilisk_cfg)
         basilisk_cfg_layout.addWidget(basilisk_cfg_btn)
-        basilisk_layout.addRow("Config File:", basilisk_cfg_layout)
+        basilisk_layout.addRow(tr('config_file'), basilisk_cfg_layout)
         
-        zap_basilisk_btn = QPushButton("Zap PRAM")
+        zap_basilisk_btn = QPushButton(tr('zap_pram'))
         zap_basilisk_btn.clicked.connect(lambda: self.zap_pram('basilisk'))
         basilisk_layout.addRow("", zap_basilisk_btn)
         
@@ -1561,28 +2127,28 @@ class SettingsTab(QWidget):
         
         sheepshaver_exe_layout = QHBoxLayout()
         self.sheepshaver_exe = QLineEdit()
-        sheepshaver_exe_btn = QPushButton("Browse")
+        sheepshaver_exe_btn = QPushButton(tr('browse'))
         sheepshaver_exe_btn.clicked.connect(lambda: self.browse_exe(self.sheepshaver_exe))
         sheepshaver_exe_layout.addWidget(self.sheepshaver_exe)
         sheepshaver_exe_layout.addWidget(sheepshaver_exe_btn)
-        sheepshaver_layout.addRow("Executable:", sheepshaver_exe_layout)
+        sheepshaver_layout.addRow(tr('executable'), sheepshaver_exe_layout)
         
         sheepshaver_cfg_layout = QHBoxLayout()
         self.sheepshaver_cfg = QLineEdit()
-        sheepshaver_cfg_btn = QPushButton("Browse")
+        sheepshaver_cfg_btn = QPushButton(tr('browse'))
         sheepshaver_cfg_btn.clicked.connect(lambda: self.browse_file(self.sheepshaver_cfg))
         sheepshaver_cfg_layout.addWidget(self.sheepshaver_cfg)
         sheepshaver_cfg_layout.addWidget(sheepshaver_cfg_btn)
-        sheepshaver_layout.addRow("Config File:", sheepshaver_cfg_layout)
+        sheepshaver_layout.addRow(tr('config_file'), sheepshaver_cfg_layout)
         
-        zap_sheepshaver_btn = QPushButton("Zap PRAM")
+        zap_sheepshaver_btn = QPushButton(tr('zap_pram'))
         zap_sheepshaver_btn.clicked.connect(lambda: self.zap_pram('sheepshaver'))
         sheepshaver_layout.addRow("", zap_sheepshaver_btn)
         
         layout.addWidget(sheepshaver_group)
         
         # Save button
-        save_btn = QPushButton("Save Settings")
+        save_btn = QPushButton(tr('save_settings'))
         save_btn.clicked.connect(self.save_settings)
         layout.addWidget(save_btn)
         
@@ -1603,13 +2169,27 @@ class SettingsTab(QWidget):
         self.basilisk_cfg.setText(self.settings.value('basilisk/cfg', ''))
         self.sheepshaver_exe.setText(self.settings.value('sheepshaver/exe', ''))
         self.sheepshaver_cfg.setText(self.settings.value('sheepshaver/cfg', ''))
+        
+        # Load language setting
+        current_lang = self.settings.value('language', 'en')
+        index = self.language_combo.findData(current_lang)
+        if index >= 0:
+            self.language_combo.setCurrentIndex(index)
+    
+    def _on_language_changed(self, index):
+        """Handle language change."""
+        lang_code = self.language_combo.currentData()
+        current_lang = self.settings.value('language', 'en')
+        if lang_code != current_lang:
+            self.settings.setValue('language', lang_code)
+            self.restart_label.show()
     
     def save_settings(self):
         self.settings.setValue('basilisk/exe', self.basilisk_exe.text())
         self.settings.setValue('basilisk/cfg', self.basilisk_cfg.text())
         self.settings.setValue('sheepshaver/exe', self.sheepshaver_exe.text())
         self.settings.setValue('sheepshaver/cfg', self.sheepshaver_cfg.text())
-        QMessageBox.information(self, "Settings", "Settings saved successfully!")
+        QMessageBox.information(self, tr('settings_tab'), tr('settings_saved'))
     
     def zap_pram(self, emulator_type: str):
         """Delete PRAM/NVRAM file for the specified emulator."""
@@ -1652,7 +2232,7 @@ class PrefsEditor(QMainWindow):
         self.load_configs()
     
     def init_ui(self):
-        self.setWindowTitle("Sheepshaver & Basilisk II Preferences Editor")
+        self.setWindowTitle(tr('app_title'))
         self.setMinimumSize(800, 550)
         self.resize(800, 550)  # 초기 창 크기
         
@@ -1683,9 +2263,9 @@ class PrefsEditor(QMainWindow):
         self.sheepshaver_tab.save_requested.connect(self.save_all_configs)
         self.sheepshaver_tab.reload_requested.connect(self.load_configs)
         
-        self.main_tabs.addTab(self.basilisk_tab, get_icon("68k.png"), "Basilisk II")
-        self.main_tabs.addTab(self.sheepshaver_tab, get_icon("ppc.png"), "Sheepshaver")
-        self.main_tabs.addTab(self.settings_tab, get_icon("settings.png"), "Settings")
+        self.main_tabs.addTab(self.basilisk_tab, get_icon("68k.png"), tr('basilisk_tab'))
+        self.main_tabs.addTab(self.sheepshaver_tab, get_icon("ppc.png"), tr('sheepshaver_tab'))
+        self.main_tabs.addTab(self.settings_tab, get_icon("settings.png"), tr('settings_tab'))
         
         # About button in top-right corner of tab bar
         # Top-right corner buttons: Save All, Reload, About
@@ -1698,7 +2278,7 @@ class PrefsEditor(QMainWindow):
         btn_height = 26
         
         # Save All Button
-        save_btn = QPushButton("Save All")
+        save_btn = QPushButton(tr('save_all'))
         save_btn.setIcon(get_icon("save.png"))
         save_btn.setCursor(Qt.PointingHandCursor)
         save_btn.setFixedHeight(btn_height)
@@ -1706,7 +2286,7 @@ class PrefsEditor(QMainWindow):
         top_right_layout.addWidget(save_btn)
         
         # Reload Button
-        reload_btn = QPushButton("Reload")
+        reload_btn = QPushButton(tr('reload'))
         reload_btn.setIcon(get_icon("reload.png"))
         reload_btn.setCursor(Qt.PointingHandCursor)
         reload_btn.setFixedHeight(btn_height)
@@ -1714,7 +2294,7 @@ class PrefsEditor(QMainWindow):
         top_right_layout.addWidget(reload_btn)
         
         # About Button
-        about_btn = QPushButton("About")
+        about_btn = QPushButton(tr('about'))
         about_btn.setIcon(get_icon("about.png"))
         about_btn.setCursor(Qt.PointingHandCursor)
         about_btn.setFixedHeight(btn_height)
@@ -1751,9 +2331,9 @@ class PrefsEditor(QMainWindow):
             # Reload configurations to reflect changes
             self.load_configs()
             
-            QMessageBox.information(self, "Save", "Configuration saved and reloaded successfully!")
+            QMessageBox.information(self, tr('save'), tr('config_saved'))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save configurations:\n{e}")
+            QMessageBox.critical(self, tr('error'), f"Failed to save configurations:\n{e}")
     
     def launch_emulator(self, emulator_type: str):
         """Launch the specified emulator."""
@@ -1804,7 +2384,7 @@ class PrefsEditor(QMainWindow):
         from qtpy.QtWidgets import QDialog, QLabel
         
         dialog = QDialog(self)
-        dialog.setWindowTitle("About")
+        dialog.setWindowTitle(tr('about'))
         dialog.setFixedSize(300, 200)
         
         layout = QVBoxLayout(dialog)
@@ -1828,12 +2408,12 @@ class PrefsEditor(QMainWindow):
         layout.addWidget(name_label)
         
         # Version
-        version_label = QLabel("Version 2.0 Beta")
+        version_label = QLabel(tr('version'))
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
         
         # Copyright
-        copyright_label = QLabel("© 2026 DINKI'ssTyle")
+        copyright_label = QLabel(tr('copyright'))
         copyright_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(copyright_label)
         
