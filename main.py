@@ -57,10 +57,6 @@ LEFT_PANEL_CONFIG = {
     'row4_align': 'bottom',
     'row4_padding_bottom': 10,
     'action_btn_spacing': 10,
-    
-    # Colors
-    'panel_background_color': '#FFFFFF',
-    'content_background_color': '#FFFFFF',
 }
 
 
@@ -976,10 +972,6 @@ class InputSerialTab(QWidget):
         
         # Content widget
         content = QWidget()
-        content.setAutoFillBackground(True)
-        content_palette = content.palette()
-        content_palette.setColor(content.backgroundRole(), QColor(LEFT_PANEL_CONFIG['content_background_color']))
-        content.setPalette(content_palette)
         layout = QVBoxLayout(content)
         layout.setSpacing(10)
         
@@ -1241,10 +1233,6 @@ class LeftPanel(QWidget):
     def init_ui(self):
         cfg = LEFT_PANEL_CONFIG
         
-        # Set panel background color
-        self.setAttribute(Qt.WA_StyledBackground, True)
-        self.setStyleSheet(f"background-color: {cfg['panel_background_color']};")
-        
         # Main layout - no spacing between rows
         layout = QVBoxLayout(self)
         layout.setSpacing(0)
@@ -1295,7 +1283,6 @@ class LeftPanel(QWidget):
             QLabel {{
                 font-size: {cfg['title_font_size']}px;
                 font-weight: bold;
-                color: #333;
             }}
         """)
         self.title_label.setWordWrap(False)
@@ -1344,12 +1331,7 @@ class LeftPanel(QWidget):
             self.power_btn.setStyleSheet("""
                 QLabel {
                     font-size: 24px;
-                    background-color: #444;
-                    color: white;
                     border-radius: 10px;
-                }
-                QLabel:hover {
-                    background-color: #555;
                 }
             """)
         
@@ -1460,14 +1442,12 @@ class EmulatorTab(QWidget):
         right_layout.setContentsMargins(0, 0, 0, 0)
         
         self.sub_tabs = QTabWidget()
-        self.sub_tabs.setStyleSheet(f"""
-            QTabWidget::pane {{
-                background-color: {LEFT_PANEL_CONFIG['content_background_color']};
-                border: 1px solid #C0C0C0;
-            }}
-            QTabBar::tab {{
-                background-color: #E0E0E0;
-                border: 1px solid #A0A0A0;
+        self.sub_tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid palette(mid);
+            }
+            QTabBar::tab {
+                border: 1px solid palette(mid);
                 padding: 6px;
                 min-width: 30px;
                 min-height: 20px;
@@ -1475,14 +1455,10 @@ class EmulatorTab(QWidget):
                 border-top-right-radius: 4px;
                 margin-right: 2px;
                 qproperty-iconSize: 24px 24px;
-            }}
-            QTabBar::tab:selected {{
-                background-color: {LEFT_PANEL_CONFIG['content_background_color']};
-                border-bottom-color: {LEFT_PANEL_CONFIG['content_background_color']};
-            }}
-            QTabBar::tab:!selected {{
+            }
+            QTabBar::tab:!selected {
                 margin-top: 2px;
-            }}
+            }
         """)
         
         # Create tabs
