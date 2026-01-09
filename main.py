@@ -1882,27 +1882,6 @@ def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     
-    # Fix QComboBox rendering issue with Fusion style by setting palette colors
-    from qtpy.QtGui import QPalette, QColor
-    palette = app.palette()
-    palette.setColor(QPalette.Highlight, QColor(0xE0, 0x70, 0x20))
-    palette.setColor(QPalette.HighlightedText, QColor(0xFF, 0xFF, 0xFF))
-    palette.setColor(QPalette.Text, QColor(0x00, 0x00, 0x00))
-    palette.setColor(QPalette.Base, QColor(0xFF, 0xFF, 0xFF))
-    app.setPalette(palette)
-    
-    # Ensure dropdown popup items are visible
-    app.setStyleSheet("""
-        QComboBox QAbstractItemView::item {
-            color: #000000;
-            background-color: #FFFFFF;
-        }
-        QComboBox QAbstractItemView::item:selected {
-            color: #FFFFFF;
-            background-color: #E07020;
-        }
-    """)
-    
     window = PrefsEditor()
     window.show()
     
