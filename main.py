@@ -16,9 +16,10 @@ from qtpy.QtWidgets import (
     QTabWidget, QLabel, QLineEdit, QPushButton, QSpinBox, QCheckBox,
     QComboBox, QListWidget, QListWidgetItem, QGroupBox, QFormLayout,
     QFileDialog, QMessageBox, QToolBar, QSplitter, QFrame, QDoubleSpinBox,
-    QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
+    QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
+    QScrollArea, QGridLayout
 )
-from qtpy.QtCore import Qt, QSettings
+from qtpy.QtCore import Qt, QSettings, QSize
 from qtpy.QtGui import QAction, QIcon, QPixmap
 
 
@@ -119,6 +120,8 @@ class DrivesTab(QWidget):
         self.disk_table.setSelectionMode(QAbstractItemView.SingleSelection)
         # self.disk_table.setDragDropMode(QAbstractItemView.InternalMove) # Drag drop rows in TableWidget is complex, relying on buttons
         disk_layout.addWidget(self.disk_table)
+
+        # self.disk_table.setMaximumHeight(100)
         
         btn_layout = QHBoxLayout()
         self.btn_add = QPushButton("Add")
@@ -140,39 +143,47 @@ class DrivesTab(QWidget):
         
         layout.addWidget(disk_group)
         
-        # Other Storage Options
+        # Other Storage Options - Grid Layout
         storage_group = QGroupBox("Storage Options")
-        storage_layout = QFormLayout(storage_group)
+        storage_layout = QGridLayout(storage_group)
         
-        # ExtFS
+        # Row 0: ExtFS
+        storage_layout.addWidget(QLabel("ExtFS Path:"), 0, 0)
         extfs_layout = QHBoxLayout()
         self.extfs_edit = QLineEdit()
         extfs_btn = QPushButton("Browse")
         extfs_btn.clicked.connect(lambda: self.browse_dir(self.extfs_edit))
         extfs_layout.addWidget(self.extfs_edit)
         extfs_layout.addWidget(extfs_btn)
-        storage_layout.addRow("ExtFS Path:", extfs_layout)
+        storage_layout.addLayout(extfs_layout, 0, 1, 1, 5)
         
-        # ROM
+        # Row 1: ROM
+        storage_layout.addWidget(QLabel("ROM File:"), 1, 0)
         rom_layout = QHBoxLayout()
         self.rom_edit = QLineEdit()
         rom_btn = QPushButton("Browse")
         rom_btn.clicked.connect(lambda: self.browse_file(self.rom_edit, "ROM Files (*.rom);;All Files (*)"))
         rom_layout.addWidget(self.rom_edit)
         rom_layout.addWidget(rom_btn)
-        storage_layout.addRow("ROM File:", rom_layout)
+        storage_layout.addLayout(rom_layout, 1, 1, 1, 5)
         
-        # Boot options
+        # Row 2: Boot Drive | Boot Driver | Disable CD-ROM
+        storage_layout.addWidget(QLabel("Boot Drive:"), 2, 0)
         self.boot_drive = QSpinBox()
         self.boot_drive.setRange(0, 255)
-        storage_layout.addRow("Boot Drive:", self.boot_drive)
+        storage_layout.addWidget(self.boot_drive, 2, 1)
         
+        storage_layout.addWidget(QLabel("Boot Driver:"), 2, 2)
         self.boot_driver = QSpinBox()
         self.boot_driver.setRange(0, 255)
-        storage_layout.addRow("Boot Driver:", self.boot_driver)
+        storage_layout.addWidget(self.boot_driver, 2, 3)
         
         self.no_cdrom = QCheckBox("Disable CD-ROM")
-        storage_layout.addRow("", self.no_cdrom)
+        storage_layout.addWidget(self.no_cdrom, 2, 4, 1, 2)
+        
+        # Set column stretch
+        storage_layout.setColumnStretch(1, 1)
+        storage_layout.setColumnStretch(3, 1)
         
         layout.addWidget(storage_group)
         layout.addStretch()
@@ -290,72 +301,77 @@ class GraphicsTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
-        # Display Group
+        # Display Group - Grid layout
         display_group = QGroupBox("Display")
-        display_layout = QFormLayout(display_group)
+        display_layout = QGridLayout(display_group)
         
-        # Screen mode
+        # Row 0: Screen Mode
+        display_layout.addWidget(QLabel("Screen Mode:"), 0, 0)
         self.screen_mode = QComboBox()
         self.screen_mode.addItems(["win", "dga", "full"])
-        display_layout.addRow("Screen Mode:", self.screen_mode)
+        display_layout.addWidget(self.screen_mode, 0, 1, 1, 5)
         
+        # Row 1: Width | Height | Color Depth
+        display_layout.addWidget(QLabel("Width:"), 1, 0)
         self.screen_width = QSpinBox()
         self.screen_width.setRange(320, 3840)
         self.screen_width.setValue(800)
-        display_layout.addRow("Width:", self.screen_width)
+        display_layout.addWidget(self.screen_width, 1, 1)
         
+        display_layout.addWidget(QLabel("Height:"), 1, 2)
         self.screen_height = QSpinBox()
         self.screen_height.setRange(240, 2160)
         self.screen_height.setValue(600)
-        display_layout.addRow("Height:", self.screen_height)
+        display_layout.addWidget(self.screen_height, 1, 3)
         
+        display_layout.addWidget(QLabel("Color Depth:"), 1, 4)
         self.color_depth = QComboBox()
         self.color_depth.addItems(["0 (Default)", "8", "16", "24", "32"])
-        display_layout.addRow("Color Depth:", self.color_depth)
+        display_layout.addWidget(self.color_depth, 1, 5)
+        
+        # Row 2: Frame Skip | SDL Render (moved from Performance and Renderer)
+        display_layout.addWidget(QLabel("Frame Skip:"), 2, 0)
+        self.frameskip = QSpinBox()
+        self.frameskip.setRange(0, 60)
+        display_layout.addWidget(self.frameskip, 2, 1)
+        
+        display_layout.addWidget(QLabel("SDL Render:"), 2, 2)
+        self.sdl_render = QComboBox()
+        self.sdl_render.addItems(["software", "opengl", "opengles", "opengles2", "metal"])
+        display_layout.addWidget(self.sdl_render, 2, 3, 1, 3)
+        
+        # GFX Acceleration (Sheepshaver only)
+        self.gfx_accel = QCheckBox("GFX Acceleration")
+        if self.emulator_type == 'sheepshaver':
+            display_layout.addWidget(self.gfx_accel, 3, 0, 1, 2)
+        
+        # Set column stretch
+        display_layout.setColumnStretch(1, 1)
+        display_layout.setColumnStretch(3, 1)
+        display_layout.setColumnStretch(5, 1)
         
         layout.addWidget(display_group)
         
-        # Performance Group
-        perf_group = QGroupBox("Performance")
-        perf_layout = QFormLayout(perf_group)
-        
-        self.frameskip = QSpinBox()
-        self.frameskip.setRange(0, 60)
-        perf_layout.addRow("Frame Skip:", self.frameskip)
-        
-        self.gfx_accel = QCheckBox("Enable")
-        if self.emulator_type == 'sheepshaver':
-            perf_layout.addRow("GFX Acceleration:", self.gfx_accel)
-        
-        layout.addWidget(perf_group)
-        
-        # Scaling Group
+        # Scaling Group - Grid layout
         scale_group = QGroupBox("Scaling")
-        scale_layout = QFormLayout(scale_group)
+        scale_layout = QGridLayout(scale_group)
         
+        # Row 0: Nearest Neighbor | Integer Scaling
         self.scale_nearest = QCheckBox("Nearest Neighbor")
-        scale_layout.addRow("", self.scale_nearest)
+        scale_layout.addWidget(self.scale_nearest, 0, 0)
         
         self.scale_integer = QCheckBox("Integer Scaling")
-        scale_layout.addRow("", self.scale_integer)
+        scale_layout.addWidget(self.scale_integer, 0, 1)
         
+        # Row 1: Magnification
+        scale_layout.addWidget(QLabel("Magnification:"), 1, 0)
         self.mag_rate = QDoubleSpinBox()
         self.mag_rate.setRange(0.0, 4.0)
         self.mag_rate.setSingleStep(0.1)
         self.mag_rate.setValue(1.0)
-        scale_layout.addRow("Magnification:", self.mag_rate)
+        scale_layout.addWidget(self.mag_rate, 1, 1)
         
         layout.addWidget(scale_group)
-        
-        # Render Group
-        render_group = QGroupBox("Renderer")
-        render_layout = QFormLayout(render_group)
-        
-        self.sdl_render = QComboBox()
-        self.sdl_render.addItems(["software", "opengl", "opengles", "opengles2", "metal"])
-        render_layout.addRow("SDL Render:", self.sdl_render)
-        
-        layout.addWidget(render_group)
         layout.addStretch()
     
     def load_config(self, config: dict):
@@ -501,6 +517,50 @@ class NetworkTab(QWidget):
             config['nonet'] = self.no_net.isChecked()
 
 
+class GraphicsSoundTab(QWidget):
+    """Combined Graphics and Sound configuration."""
+    
+    def __init__(self, emulator_type: str):
+        super().__init__()
+        self.emulator_type = emulator_type
+        self.graphics_tab = GraphicsTab(emulator_type)
+        self.sound_tab = SoundTab(emulator_type)
+        self.init_ui()
+    
+    def init_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create scroll area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setSpacing(10)
+        
+        # Add Graphics settings
+        layout.addWidget(self.graphics_tab)
+        
+        # Add Sound settings
+        layout.addWidget(self.sound_tab)
+        
+        layout.addStretch()
+        
+        scroll.setWidget(content)
+        main_layout.addWidget(scroll)
+    
+    def load_config(self, config: dict):
+        self.graphics_tab.load_config(config)
+        self.sound_tab.load_config(config)
+    
+    def save_config(self, config: dict):
+        self.graphics_tab.save_config(config)
+        self.sound_tab.save_config(config)
+
+
 class CpuMemoryTab(QWidget):
     """CPU and Memory configuration."""
     
@@ -572,34 +632,39 @@ class CpuMemoryTab(QWidget):
             
             layout.addWidget(cpu_group)
         
-        # JIT Group
+        # JIT Group - 2 column layout
         jit_group = QGroupBox("JIT Compiler")
-        jit_layout = QFormLayout(jit_group)
+        jit_layout = QGridLayout(jit_group)
         
         self.jit_enabled = QCheckBox("Enable JIT")
-        jit_layout.addRow("", self.jit_enabled)
         
         if self.emulator_type == 'basilisk':
             self.jit_fpu = QCheckBox("JIT FPU")
-            jit_layout.addRow("", self.jit_fpu)
+            self.jit_lazy_flush = QCheckBox("Lazy Flush")
+            self.jit_inline = QCheckBox("Inline")
+            self.jit_debug = QCheckBox("Debug")
             
             self.jit_cache_size = QSpinBox()
             self.jit_cache_size.setRange(0, 65536)
             self.jit_cache_size.setValue(8192)
-            jit_layout.addRow("Cache Size (KB):", self.jit_cache_size)
             
-            self.jit_lazy_flush = QCheckBox("Lazy Flush")
-            jit_layout.addRow("", self.jit_lazy_flush)
-            
-            self.jit_inline = QCheckBox("Inline")
-            jit_layout.addRow("", self.jit_inline)
-            
-            self.jit_debug = QCheckBox("Debug")
-            jit_layout.addRow("", self.jit_debug)
+            # Row 0: Enable JIT | JIT FPU
+            jit_layout.addWidget(self.jit_enabled, 0, 0)
+            jit_layout.addWidget(self.jit_fpu, 0, 1)
+            # Row 1: Cache Size label | Cache Size spinbox | Lazy Flush
+            jit_layout.addWidget(QLabel("Cache Size (KB):"), 1, 0)
+            jit_layout.addWidget(self.jit_cache_size, 1, 1)
+            # Row 2: Lazy Flush | Inline
+            jit_layout.addWidget(self.jit_lazy_flush, 2, 0)
+            jit_layout.addWidget(self.jit_inline, 2, 1)
+            # Row 3: Debug
+            jit_layout.addWidget(self.jit_debug, 3, 0)
         
         if self.emulator_type == 'sheepshaver':
             self.jit_68k = QCheckBox("JIT 68K")
-            jit_layout.addRow("", self.jit_68k)
+            # Row 0: Enable JIT | JIT 68K
+            jit_layout.addWidget(self.jit_enabled, 0, 0)
+            jit_layout.addWidget(self.jit_68k, 0, 1)
         
         layout.addWidget(jit_group)
         layout.addStretch()
@@ -714,24 +779,33 @@ class InputTab(QWidget):
         
         layout.addWidget(km_group)
         
-        # Mouse Group
+        # Mouse Group - 2 column layout
         mouse_group = QGroupBox("Mouse")
-        mouse_layout = QFormLayout(mouse_group)
+        mouse_layout = QGridLayout(mouse_group)
         
-        self.mouse_wheel_mode = QSpinBox()
-        self.mouse_wheel_mode.setRange(0, 3)
-        mouse_layout.addRow("Wheel Mode:", self.mouse_wheel_mode)
+        # Row 0: Wheel Mode | Wheel Lines
+        mouse_layout.addWidget(QLabel("Wheel Mode:"), 0, 0)
+        self.mouse_wheel_mode = QComboBox()
+        self.mouse_wheel_mode.addItem("Page Up/Down", 0)
+        self.mouse_wheel_mode.addItem("Cursor Up/Down", 1)
+        mouse_layout.addWidget(self.mouse_wheel_mode, 0, 1)
         
+        mouse_layout.addWidget(QLabel("Wheel Lines:"), 0, 2)
         self.mouse_wheel_lines = QSpinBox()
         self.mouse_wheel_lines.setRange(1, 20)
-        mouse_layout.addRow("Wheel Lines:", self.mouse_wheel_lines)
+        mouse_layout.addWidget(self.mouse_wheel_lines, 0, 3)
         
+        # Row 1: Checkboxes
         self.init_grab = QCheckBox("Initial Grab")
-        mouse_layout.addRow("", self.init_grab)
+        mouse_layout.addWidget(self.init_grab, 1, 0, 1, 2)
         
         if self.emulator_type == 'sheepshaver':
             self.hard_cursor = QCheckBox("Hardware Cursor")
-            mouse_layout.addRow("", self.hard_cursor)
+            mouse_layout.addWidget(self.hard_cursor, 1, 2, 1, 2)
+        
+        # Set column stretch
+        mouse_layout.setColumnStretch(1, 1)
+        mouse_layout.setColumnStretch(3, 1)
         
         layout.addWidget(mouse_group)
         layout.addStretch()
@@ -765,7 +839,12 @@ class InputTab(QWidget):
             self.hotkey.setCurrentIndex(0) # Default to Control (1)
             
         self.swap_opt_cmd.setChecked(config.get('swap_opt_cmd', True))
-        self.mouse_wheel_mode.setValue(config.get('mousewheelmode', 1))
+        wheel_mode = config.get('mousewheelmode', 1)
+        index = self.mouse_wheel_mode.findData(wheel_mode)
+        if index >= 0:
+            self.mouse_wheel_mode.setCurrentIndex(index)
+        else:
+            self.mouse_wheel_mode.setCurrentIndex(1)  # Default to Cursor Up/Down
         self.mouse_wheel_lines.setValue(config.get('mousewheellines', 3))
         self.init_grab.setChecked(config.get('init_grab', False))
         if self.emulator_type == 'sheepshaver':
@@ -777,7 +856,7 @@ class InputTab(QWidget):
         config['keycodefile'] = self.keycode_file.text()
         config['hotkey'] = self.hotkey.currentData()
         config['swap_opt_cmd'] = self.swap_opt_cmd.isChecked()
-        config['mousewheelmode'] = self.mouse_wheel_mode.value()
+        config['mousewheelmode'] = self.mouse_wheel_mode.currentData()
         config['mousewheellines'] = self.mouse_wheel_lines.value()
         config['init_grab'] = self.init_grab.isChecked()
         if self.emulator_type == 'sheepshaver':
@@ -795,16 +874,23 @@ class SerialTab(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
+        # Serial Ports - 2 column layout
         serial_group = QGroupBox("Serial Ports")
-        serial_layout = QFormLayout(serial_group)
+        serial_layout = QGridLayout(serial_group)
         
+        serial_layout.addWidget(QLabel("Serial A:"), 0, 0)
         self.serial_a = QLineEdit()
         self.serial_a.setPlaceholderText("/dev/ttyS0")
-        serial_layout.addRow("Serial A:", self.serial_a)
+        serial_layout.addWidget(self.serial_a, 0, 1)
         
+        serial_layout.addWidget(QLabel("Serial B:"), 0, 2)
         self.serial_b = QLineEdit()
         self.serial_b.setPlaceholderText("/dev/ttyS1")
-        serial_layout.addRow("Serial B:", self.serial_b)
+        serial_layout.addWidget(self.serial_b, 0, 3)
+        
+        # Set column stretch
+        serial_layout.setColumnStretch(1, 1)
+        serial_layout.setColumnStretch(3, 1)
         
         layout.addWidget(serial_group)
         layout.addStretch()
@@ -816,6 +902,50 @@ class SerialTab(QWidget):
     def save_config(self, config: dict):
         config['seriala'] = self.serial_a.text()
         config['serialb'] = self.serial_b.text()
+
+
+class InputSerialTab(QWidget):
+    """Combined Input and Serial configuration."""
+    
+    def __init__(self, emulator_type: str):
+        super().__init__()
+        self.emulator_type = emulator_type
+        self.input_tab = InputTab(emulator_type)
+        self.serial_tab = SerialTab(emulator_type)
+        self.init_ui()
+    
+    def init_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create scroll area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        # Content widget
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setSpacing(10)
+        
+        # Add Input settings
+        layout.addWidget(self.input_tab)
+        
+        # Add Serial settings
+        layout.addWidget(self.serial_tab)
+        
+        layout.addStretch()
+        
+        scroll.setWidget(content)
+        main_layout.addWidget(scroll)
+    
+    def load_config(self, config: dict):
+        self.input_tab.load_config(config)
+        self.serial_tab.load_config(config)
+    
+    def save_config(self, config: dict):
+        self.input_tab.save_config(config)
+        self.serial_tab.save_config(config)
 
 
 class MiscTab(QWidget):
@@ -839,39 +969,49 @@ class MiscTab(QWidget):
         
         layout.addWidget(title_group)
         
-        # Miscellaneous Group
+        # Miscellaneous Group - 2 column layout
         misc_group = QGroupBox("Miscellaneous")
-        misc_layout = QFormLayout(misc_group)
+        misc_layout = QGridLayout(misc_group)
         
         self.no_gui = QCheckBox("No GUI")
-        misc_layout.addRow("", self.no_gui)
-        
         self.no_clip_conversion = QCheckBox("No Clipboard Conversion")
-        misc_layout.addRow("", self.no_clip_conversion)
-        
         self.ignore_segv = QCheckBox("Ignore SEGV")
-        misc_layout.addRow("", self.ignore_segv)
+        self.idle_wait = QCheckBox("Idle Wait")
         
         if self.emulator_type == 'sheepshaver':
             self.ignore_illegal = QCheckBox("Ignore Illegal Instructions")
-            misc_layout.addRow("", self.ignore_illegal)
-        
-        self.idle_wait = QCheckBox("Idle Wait")
-        misc_layout.addRow("", self.idle_wait)
+            # Sheepshaver: 3 + 2 layout
+            misc_layout.addWidget(self.no_gui, 0, 0)
+            misc_layout.addWidget(self.no_clip_conversion, 0, 1)
+            misc_layout.addWidget(self.ignore_segv, 1, 0)
+            misc_layout.addWidget(self.ignore_illegal, 1, 1)
+            misc_layout.addWidget(self.idle_wait, 2, 0)
+        else:
+            # Basilisk: 2 + 2 layout
+            misc_layout.addWidget(self.no_gui, 0, 0)
+            misc_layout.addWidget(self.no_clip_conversion, 0, 1)
+            misc_layout.addWidget(self.ignore_segv, 1, 0)
+            misc_layout.addWidget(self.idle_wait, 1, 1)
         
         layout.addWidget(misc_group)
         
-        # Time offset
+        # Time offset - 2 column layout
         time_group = QGroupBox("Time Offset")
-        time_layout = QFormLayout(time_group)
+        time_layout = QGridLayout(time_group)
         
+        time_layout.addWidget(QLabel("Year Offset:"), 0, 0)
         self.year_offset = QSpinBox()
         self.year_offset.setRange(-100, 100)
-        time_layout.addRow("Year Offset:", self.year_offset)
+        time_layout.addWidget(self.year_offset, 0, 1)
         
+        time_layout.addWidget(QLabel("Day Offset:"), 0, 2)
         self.day_offset = QSpinBox()
         self.day_offset.setRange(-365, 365)
-        time_layout.addRow("Day Offset:", self.day_offset)
+        time_layout.addWidget(self.day_offset, 0, 3)
+        
+        # Set column stretch for even distribution
+        time_layout.setColumnStretch(1, 1)
+        time_layout.setColumnStretch(3, 1)
         
         layout.addWidget(time_group)
         
@@ -948,11 +1088,145 @@ class MiscTab(QWidget):
 
 
 # ============================================================================
+# Clickable Label for Power Button
+# ============================================================================
+
+class ClickableLabel(QLabel):
+    """A QLabel that emits a clicked signal when pressed."""
+    
+    from qtpy.QtCore import Signal
+    clicked = Signal()
+    
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+        super().mousePressEvent(event)
+
+
+# ============================================================================
+# Left Panel (Icon, Title, Power Button)
+# ============================================================================
+
+class LeftPanel(QWidget):
+    """Left panel containing icon, title label, and power button."""
+    
+    from qtpy.QtCore import Signal
+    power_clicked = Signal()
+    
+    def __init__(self, emulator_type: str):
+        super().__init__()
+        self.emulator_type = emulator_type
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        layout.setSpacing(15)
+        
+        # Icon Area (512x512 frame)
+        self.icon_frame = QFrame()
+        self.icon_frame.setFixedSize(220, 220)
+        self.icon_frame.setStyleSheet("""
+            QFrame {
+                background-color: #f0f0f0;
+                border: 2px solid #c0c0c0;
+                border-radius: 5px;
+            }
+        """)
+        
+        icon_layout = QVBoxLayout(self.icon_frame)
+        icon_layout.setAlignment(Qt.AlignCenter)
+        
+        self.icon_label = QLabel()
+        self.icon_label.setFixedSize(200, 200)
+        self.icon_label.setAlignment(Qt.AlignCenter)
+        self.icon_label.setStyleSheet("border: none; background: transparent;")
+        icon_layout.addWidget(self.icon_label)
+        
+        layout.addWidget(self.icon_frame)
+        
+        # Title Label
+        self.title_label = QLabel(self._get_default_title())
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+                color: #333;
+            }
+        """)
+        self.title_label.setWordWrap(True)
+        self.title_label.setMaximumWidth(220)
+        layout.addWidget(self.title_label)
+        
+        # Power Button
+        self.power_btn = ClickableLabel()
+        self.power_btn.setFixedSize(120, 100)
+        self.power_btn.setAlignment(Qt.AlignCenter)
+        self.power_btn.setCursor(Qt.PointingHandCursor)
+        self.power_btn.setToolTip("Click to launch emulator")
+        
+        # Load power switch image
+        power_img_name = "68k_pwrsw.png" if self.emulator_type == 'basilisk' else "ppc_pwrsw.png"
+        power_img_path = os.path.join(os.path.dirname(__file__), 'res', power_img_name)
+        
+        if os.path.exists(power_img_path):
+            pixmap = QPixmap(power_img_path)
+            if not pixmap.isNull():
+                pixmap = pixmap.scaled(120, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.power_btn.setPixmap(pixmap)
+        else:
+            self.power_btn.setText("⏻ Start")
+            self.power_btn.setStyleSheet("""
+                QLabel {
+                    font-size: 24px;
+                    background-color: #444;
+                    color: white;
+                    border-radius: 10px;
+                }
+                QLabel:hover {
+                    background-color: #555;
+                }
+            """)
+        
+        self.power_btn.clicked.connect(self.power_clicked.emit)
+        layout.addWidget(self.power_btn, alignment=Qt.AlignCenter)
+        
+        layout.addStretch()
+        
+        # Set fixed width for left panel
+        self.setFixedWidth(250)
+    
+    def _get_default_title(self):
+        if self.emulator_type == 'basilisk':
+            return "68k Macintosh"
+        else:
+            return "PPC Macintosh"
+    
+    def set_title(self, title: str):
+        """Set the title label text."""
+        if title.strip():
+            self.title_label.setText(title)
+        else:
+            self.title_label.setText(self._get_default_title())
+    
+    def set_icon(self, icon_path: str):
+        """Set the icon image from path."""
+        if icon_path and os.path.exists(icon_path):
+            pixmap = QPixmap(icon_path)
+            if not pixmap.isNull():
+                pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.icon_label.setPixmap(pixmap)
+
+
+# ============================================================================
 # Emulator Tab (contains sub-tabs)
 # ============================================================================
 
 class EmulatorTab(QWidget):
     """Container for emulator-specific sub-tabs."""
+    
+    from qtpy.QtCore import Signal
+    launch_requested = Signal()
     
     def __init__(self, emulator_type: str):
         super().__init__()
@@ -961,29 +1235,53 @@ class EmulatorTab(QWidget):
         self.init_ui()
     
     def init_ui(self):
-        layout = QVBoxLayout(self)
+        main_layout = QHBoxLayout(self)
+        main_layout.setSpacing(10)
+        
+        # Left Panel
+        self.left_panel = LeftPanel(self.emulator_type)
+        self.left_panel.power_clicked.connect(self.launch_requested.emit)
+        main_layout.addWidget(self.left_panel)
+        
+        # Right Panel (sub-tabs)
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
         
         self.sub_tabs = QTabWidget()
         
+        # Create tabs
         self.drives_tab = DrivesTab(self.emulator_type)
         self.graphics_tab = GraphicsTab(self.emulator_type)
         self.sound_tab = SoundTab(self.emulator_type)
         self.network_tab = NetworkTab(self.emulator_type)
         self.cpu_memory_tab = CpuMemoryTab(self.emulator_type)
-        self.input_tab = InputTab(self.emulator_type)
-        self.serial_tab = SerialTab(self.emulator_type)
+        self.input_serial_tab = InputSerialTab(self.emulator_type)
         self.misc_tab = MiscTab(self.emulator_type)
         
-        self.sub_tabs.addTab(self.drives_tab, "💾 Drives")
-        self.sub_tabs.addTab(self.graphics_tab, "🖥️ Graphics")
-        self.sub_tabs.addTab(self.sound_tab, "🔊 Sound")
-        self.sub_tabs.addTab(self.network_tab, "🌐 Network")
-        self.sub_tabs.addTab(self.cpu_memory_tab, "⚡ CPU/Memory")
-        self.sub_tabs.addTab(self.input_tab, "⌨️ Input")
-        self.sub_tabs.addTab(self.serial_tab, "📡 Serial")
-        self.sub_tabs.addTab(self.misc_tab, "⚙️ Misc")
+        # Load tab icons from res folder
+        res_path = os.path.join(os.path.dirname(__file__), 'res')
         
-        layout.addWidget(self.sub_tabs)
+        def get_icon(icon_name):
+            icon_path = os.path.join(res_path, icon_name)
+            if os.path.exists(icon_path):
+                return QIcon(icon_path)
+            return QIcon()
+        
+        # Add tabs with icons (text can be added later)
+        self.sub_tabs.addTab(self.drives_tab, get_icon("drives.png"), "")
+        self.sub_tabs.addTab(self.graphics_tab, get_icon("monitor.png"), "")
+        self.sub_tabs.addTab(self.sound_tab, get_icon("sound.png"), "")
+        self.sub_tabs.addTab(self.network_tab, get_icon("network.png"), "")
+        self.sub_tabs.addTab(self.cpu_memory_tab, get_icon("cpu_memory.png"), "")
+        self.sub_tabs.addTab(self.input_serial_tab, get_icon("keyboard.png"), "")
+        self.sub_tabs.addTab(self.misc_tab, get_icon("misc.png"), "")
+        
+        # Set icon size for better visibility
+        self.sub_tabs.setIconSize(QSize(24, 24))
+        
+        right_layout.addWidget(self.sub_tabs)
+        main_layout.addWidget(right_widget, 1)  # Stretch factor 1 for right panel
     
     def load_config(self, config: dict):
         self.config = config
@@ -992,9 +1290,12 @@ class EmulatorTab(QWidget):
         self.sound_tab.load_config(config)
         self.network_tab.load_config(config)
         self.cpu_memory_tab.load_config(config)
-        self.input_tab.load_config(config)
-        self.serial_tab.load_config(config)
+        self.input_serial_tab.load_config(config)
         self.misc_tab.load_config(config)
+        
+        # Update left panel title from config
+        title = str(config.get('title', ''))
+        self.left_panel.set_title(title)
     
     def save_config(self) -> dict:
         config = {}
@@ -1003,8 +1304,7 @@ class EmulatorTab(QWidget):
         self.sound_tab.save_config(config)
         self.network_tab.save_config(config)
         self.cpu_memory_tab.save_config(config)
-        self.input_tab.save_config(config)
-        self.serial_tab.save_config(config)
+        self.input_serial_tab.save_config(config)
         self.misc_tab.save_config(config)
         return config
 
@@ -1149,29 +1449,40 @@ class PrefsEditor(QMainWindow):
     
     def init_ui(self):
         self.setWindowTitle("Sheepshaver & Basilisk II Preferences Editor")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(800, 550)
+        self.resize(800, 550)  # 초기 창 크기
+        
+        # Helper function to get icon
+        res_path = os.path.join(os.path.dirname(__file__), 'res')
+        def get_icon(icon_name):
+            icon_path = os.path.join(res_path, icon_name)
+            if os.path.exists(icon_path):
+                return QIcon(icon_path)
+            return QIcon()
         
         # Toolbar
         toolbar = QToolBar("Main Toolbar")
+        toolbar.setIconSize(QSize(16, 16))
+        toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.addToolBar(toolbar)
         
-        save_action = QAction("💾 Save All", self)
+        save_action = QAction(get_icon("save.png"), "Save All", self)
         save_action.triggered.connect(self.save_all_configs)
         toolbar.addAction(save_action)
         
         toolbar.addSeparator()
         
-        reload_action = QAction("🔄 Reload", self)
+        reload_action = QAction(get_icon("reload.png"), "Reload", self)
         reload_action.triggered.connect(self.load_configs)
         toolbar.addAction(reload_action)
         
         toolbar.addSeparator()
         
-        launch_basilisk = QAction("▶️ Launch Basilisk", self)
+        launch_basilisk = QAction(get_icon("launch_68k.png"), "Launch Basilisk II", self)
         launch_basilisk.triggered.connect(lambda: self.launch_emulator('basilisk'))
         toolbar.addAction(launch_basilisk)
         
-        launch_sheepshaver = QAction("▶️ Launch Sheepshaver", self)
+        launch_sheepshaver = QAction(get_icon("launch_ppc.png"), "Launch Sheepshaver", self)
         launch_sheepshaver.triggered.connect(lambda: self.launch_emulator('sheepshaver'))
         toolbar.addAction(launch_sheepshaver)
         
@@ -1180,21 +1491,26 @@ class PrefsEditor(QMainWindow):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         toolbar.addWidget(spacer)
         
-        about_action = QAction("ℹ️ About", self)
+        about_action = QAction(get_icon("about.png"), "About", self)
         about_action.triggered.connect(self.show_about)
         toolbar.addAction(about_action)
         
         # Main tabs
         self.main_tabs = QTabWidget()
+        self.main_tabs.setIconSize(QSize(16, 16))
         self.setCentralWidget(self.main_tabs)
         
         self.basilisk_tab = EmulatorTab('basilisk')
         self.sheepshaver_tab = EmulatorTab('sheepshaver')
         self.settings_tab = SettingsTab()
         
-        self.main_tabs.addTab(self.basilisk_tab, "Basilisk II")
-        self.main_tabs.addTab(self.sheepshaver_tab, "Sheepshaver")
-        self.main_tabs.addTab(self.settings_tab, "⚙️ Settings")
+        # Connect power button signals
+        self.basilisk_tab.launch_requested.connect(lambda: self.launch_emulator('basilisk'))
+        self.sheepshaver_tab.launch_requested.connect(lambda: self.launch_emulator('sheepshaver'))
+        
+        self.main_tabs.addTab(self.basilisk_tab, get_icon("68k.png"), "Basilisk II")
+        self.main_tabs.addTab(self.sheepshaver_tab, get_icon("ppc.png"), "Sheepshaver")
+        self.main_tabs.addTab(self.settings_tab, get_icon("settings.png"), "Settings")
     
     def load_configs(self):
         """Load configuration files."""
@@ -1281,7 +1597,7 @@ class PrefsEditor(QMainWindow):
         layout.setAlignment(Qt.AlignCenter)
         
         # App icon
-        icon_path = os.path.join(os.path.dirname(__file__), 'Appicon.png')
+        icon_path = os.path.join(os.path.dirname(__file__), 'res/Appicon.png')
         if os.path.exists(icon_path):
             icon_label = QLabel()
             pixmap = QPixmap(icon_path)
