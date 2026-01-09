@@ -23,7 +23,7 @@ A cross-platform GUI application for editing Sheepshaver and Basilisk II emulato
 
 ## Screenshots
 
-![screenshot](screenshot.png)
+![screenshot](screenshot.gif)
 
 ## Requirements
 
