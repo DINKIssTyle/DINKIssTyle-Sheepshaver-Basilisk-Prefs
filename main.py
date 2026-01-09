@@ -54,6 +54,9 @@ class ConfigParser:
                     disks.append((value, False))
                 elif key == '#disk':
                     disks.append((value, True))
+                # Handle #model comment for model selection
+                elif key == '#model':
+                    config['model'] = value
                 else:
                     # Convert boolean strings
                     if value.lower() == 'true':
@@ -86,6 +89,10 @@ class ConfigParser:
             # Write other settings
             for key, value in config.items():
                 if key == 'disks':
+                    continue
+                # Save model as comment
+                if key == 'model':
+                    f.write(f"#model {value}\n")
                     continue
                 if isinstance(value, bool):
                     value = 'true' if value else 'false'
@@ -950,22 +957,58 @@ class InputSerialTab(QWidget):
 
 class MiscTab(QWidget):
     """Miscellaneous configuration."""
+    from qtpy.QtCore import Signal
+    model_changed = Signal(str)  # Signal to notify icon change
     
     def __init__(self, emulator_type: str):
         super().__init__()
         self.emulator_type = emulator_type
+        self.model_list = self._load_model_list()
         self.init_ui()
+    
+    def _load_model_list(self):
+        """Load model list from res/modelList folder."""
+        models = [("None", "default")]  # Default option
+        
+        prefix = "68k_" if self.emulator_type == 'basilisk' else "ppc_"
+        model_path = os.path.join(os.path.dirname(__file__), 'res', 'modelList')
+        
+        if os.path.exists(model_path):
+            for filename in sorted(os.listdir(model_path)):
+                if filename.lower().endswith('.png') and filename.lower().startswith(prefix.lower()):
+                    # Remove prefix and .png extension
+                    model_name = filename[len(prefix):-4]
+                    if model_name.lower() != 'default':
+                        # Replace underscores with spaces for display
+                        display_name = model_name.replace('_', ' ')
+                        models.append((display_name, model_name))
+        
+        return models
     
     def init_ui(self):
         layout = QVBoxLayout(self)
         
-        # Title Group
-        title_group = QGroupBox("Title")
-        title_layout = QFormLayout(title_group)
+        # Title Group - 2 column layout
+        title_group = QGroupBox("Machine Info")
+        title_layout = QGridLayout(title_group)
         
+        # Title
+        title_layout.addWidget(QLabel("Title:"), 0, 0)
         self.title_edit = QLineEdit()
-        self.title_edit.setPlaceholderText("Enter window title")
-        title_layout.addRow("Title:", self.title_edit)
+        self.title_edit.setPlaceholderText("My Macintosh")
+        title_layout.addWidget(self.title_edit, 0, 1)
+        
+        # Model dropdown
+        title_layout.addWidget(QLabel("Model:"), 0, 2)
+        self.model_combo = QComboBox()
+        for display_name, value in self.model_list:
+            self.model_combo.addItem(display_name, value)
+        self.model_combo.currentIndexChanged.connect(self._on_model_changed)
+        title_layout.addWidget(self.model_combo, 0, 3)
+        
+        # Set column stretch
+        title_layout.setColumnStretch(1, 2)
+        title_layout.setColumnStretch(3, 1)
         
         layout.addWidget(title_group)
         
@@ -1050,8 +1093,30 @@ class MiscTab(QWidget):
         
         layout.addStretch()
     
+    def _on_model_changed(self, index):
+        """Handle model selection change."""
+        model_value = self.model_combo.currentData()
+        prefix = "68k_" if self.emulator_type == 'basilisk' else "ppc_"
+        image_name = f"{prefix}{model_value}.png"
+        self.model_changed.emit(image_name)
+    
+    def get_current_model_image(self):
+        """Get the current model image filename."""
+        model_value = self.model_combo.currentData()
+        prefix = "68k_" if self.emulator_type == 'basilisk' else "ppc_"
+        return f"{prefix}{model_value}.png"
+    
     def load_config(self, config: dict):
         self.title_edit.setText(str(config.get('title', '')))
+        
+        # Load model from config (stored as #model value)
+        model_value = config.get('model', 'default')
+        index = self.model_combo.findData(model_value)
+        if index >= 0:
+            self.model_combo.setCurrentIndex(index)
+        else:
+            self.model_combo.setCurrentIndex(0)  # Default to None
+        
         self.no_gui.setChecked(config.get('nogui', True))
         self.no_clip_conversion.setChecked(config.get('noclipconversion', False))
         self.ignore_segv.setChecked(config.get('ignoresegv', False))
@@ -1074,6 +1139,12 @@ class MiscTab(QWidget):
         title = self.title_edit.text().strip()
         if title:
             config['title'] = title
+        
+        # Save model (will be stored as comment #model value)
+        model_value = self.model_combo.currentData()
+        if model_value and model_value != 'default':
+            config['model'] = model_value
+        
         config['nogui'] = self.no_gui.isChecked()
         config['noclipconversion'] = self.no_clip_conversion.isChecked()
         config['ignoresegv'] = self.ignore_segv.isChecked()
@@ -1111,6 +1182,8 @@ class LeftPanel(QWidget):
     
     from qtpy.QtCore import Signal
     power_clicked = Signal()
+    save_clicked = Signal()
+    reload_clicked = Signal()
     
     def __init__(self, emulator_type: str):
         super().__init__()
@@ -1191,6 +1264,32 @@ class LeftPanel(QWidget):
         self.power_btn.clicked.connect(self.power_clicked.emit)
         layout.addWidget(self.power_btn, alignment=Qt.AlignCenter)
         
+        # Save and Reload buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
+        
+        res_path = os.path.join(os.path.dirname(__file__), 'res')
+        
+        self.save_btn = QPushButton()
+        save_icon_path = os.path.join(res_path, 'save.png')
+        if os.path.exists(save_icon_path):
+            self.save_btn.setIcon(QIcon(save_icon_path))
+        self.save_btn.setText("Save All")
+        self.save_btn.setCursor(Qt.PointingHandCursor)
+        self.save_btn.clicked.connect(self.save_clicked.emit)
+        btn_layout.addWidget(self.save_btn)
+        
+        self.reload_btn = QPushButton()
+        reload_icon_path = os.path.join(res_path, 'reload.png')
+        if os.path.exists(reload_icon_path):
+            self.reload_btn.setIcon(QIcon(reload_icon_path))
+        self.reload_btn.setText("Reload")
+        self.reload_btn.setCursor(Qt.PointingHandCursor)
+        self.reload_btn.clicked.connect(self.reload_clicked.emit)
+        btn_layout.addWidget(self.reload_btn)
+        
+        layout.addLayout(btn_layout)
+        
         layout.addStretch()
         
         # Set fixed width for left panel
@@ -1216,6 +1315,19 @@ class LeftPanel(QWidget):
             if not pixmap.isNull():
                 pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.icon_label.setPixmap(pixmap)
+    
+    def set_model_icon(self, image_name: str):
+        """Set the icon from model image in res/modelList folder."""
+        model_path = os.path.join(os.path.dirname(__file__), 'res', 'modelList', image_name)
+        
+        if os.path.exists(model_path):
+            pixmap = QPixmap(model_path)
+            if not pixmap.isNull():
+                pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.icon_label.setPixmap(pixmap)
+        else:
+            # Clear the icon if not found
+            self.icon_label.clear()
 
 
 # ============================================================================
@@ -1227,6 +1339,8 @@ class EmulatorTab(QWidget):
     
     from qtpy.QtCore import Signal
     launch_requested = Signal()
+    save_requested = Signal()
+    reload_requested = Signal()
     
     def __init__(self, emulator_type: str):
         super().__init__()
@@ -1241,6 +1355,8 @@ class EmulatorTab(QWidget):
         # Left Panel
         self.left_panel = LeftPanel(self.emulator_type)
         self.left_panel.power_clicked.connect(self.launch_requested.emit)
+        self.left_panel.save_clicked.connect(self.save_requested.emit)
+        self.left_panel.reload_clicked.connect(self.reload_requested.emit)
         main_layout.addWidget(self.left_panel)
         
         # Right Panel (sub-tabs)
@@ -1258,6 +1374,9 @@ class EmulatorTab(QWidget):
         self.cpu_memory_tab = CpuMemoryTab(self.emulator_type)
         self.input_serial_tab = InputSerialTab(self.emulator_type)
         self.misc_tab = MiscTab(self.emulator_type)
+        
+        # Connect model changed signal to update left panel icon
+        self.misc_tab.model_changed.connect(self.left_panel.set_model_icon)
         
         # Load tab icons from res folder
         res_path = os.path.join(os.path.dirname(__file__), 'res')
@@ -1296,6 +1415,10 @@ class EmulatorTab(QWidget):
         # Update left panel title from config
         title = str(config.get('title', ''))
         self.left_panel.set_title(title)
+        
+        # Update left panel model icon
+        model_image = self.misc_tab.get_current_model_image()
+        self.left_panel.set_model_icon(model_image)
     
     def save_config(self) -> dict:
         config = {}
@@ -1460,41 +1583,6 @@ class PrefsEditor(QMainWindow):
                 return QIcon(icon_path)
             return QIcon()
         
-        # Toolbar
-        toolbar = QToolBar("Main Toolbar")
-        toolbar.setIconSize(QSize(16, 16))
-        toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.addToolBar(toolbar)
-        
-        save_action = QAction(get_icon("save.png"), "Save All", self)
-        save_action.triggered.connect(self.save_all_configs)
-        toolbar.addAction(save_action)
-        
-        toolbar.addSeparator()
-        
-        reload_action = QAction(get_icon("reload.png"), "Reload", self)
-        reload_action.triggered.connect(self.load_configs)
-        toolbar.addAction(reload_action)
-        
-        toolbar.addSeparator()
-        
-        launch_basilisk = QAction(get_icon("launch_68k.png"), "Launch Basilisk II", self)
-        launch_basilisk.triggered.connect(lambda: self.launch_emulator('basilisk'))
-        toolbar.addAction(launch_basilisk)
-        
-        launch_sheepshaver = QAction(get_icon("launch_ppc.png"), "Launch Sheepshaver", self)
-        launch_sheepshaver.triggered.connect(lambda: self.launch_emulator('sheepshaver'))
-        toolbar.addAction(launch_sheepshaver)
-        
-        # Spacer to push About to the right
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        toolbar.addWidget(spacer)
-        
-        about_action = QAction(get_icon("about.png"), "About", self)
-        about_action.triggered.connect(self.show_about)
-        toolbar.addAction(about_action)
-        
         # Main tabs
         self.main_tabs = QTabWidget()
         self.main_tabs.setIconSize(QSize(16, 16))
@@ -1508,9 +1596,24 @@ class PrefsEditor(QMainWindow):
         self.basilisk_tab.launch_requested.connect(lambda: self.launch_emulator('basilisk'))
         self.sheepshaver_tab.launch_requested.connect(lambda: self.launch_emulator('sheepshaver'))
         
+        # Connect save and reload signals
+        self.basilisk_tab.save_requested.connect(self.save_all_configs)
+        self.basilisk_tab.reload_requested.connect(self.load_configs)
+        self.sheepshaver_tab.save_requested.connect(self.save_all_configs)
+        self.sheepshaver_tab.reload_requested.connect(self.load_configs)
+        
         self.main_tabs.addTab(self.basilisk_tab, get_icon("68k.png"), "Basilisk II")
         self.main_tabs.addTab(self.sheepshaver_tab, get_icon("ppc.png"), "Sheepshaver")
         self.main_tabs.addTab(self.settings_tab, get_icon("settings.png"), "Settings")
+        
+        # About button in top-right corner of tab bar
+        about_btn = QPushButton()
+        about_btn.setIcon(get_icon("about.png"))
+        about_btn.setText("About")
+        about_btn.setFlat(True)
+        about_btn.setCursor(Qt.PointingHandCursor)
+        about_btn.clicked.connect(self.show_about)
+        self.main_tabs.setCornerWidget(about_btn, Qt.TopRightCorner)
     
     def load_configs(self):
         """Load configuration files."""
