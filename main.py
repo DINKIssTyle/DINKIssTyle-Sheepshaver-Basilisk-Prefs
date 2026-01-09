@@ -20,7 +20,7 @@ from qtpy.QtWidgets import (
     QScrollArea, QGridLayout
 )
 from qtpy.QtCore import Qt, QSettings, QSize
-from qtpy.QtGui import QAction, QIcon, QPixmap
+from qtpy.QtGui import QAction, QIcon, QPixmap, QColor, QPalette
 
 
 # ============================================================================
@@ -976,7 +976,10 @@ class InputSerialTab(QWidget):
         
         # Content widget
         content = QWidget()
-        content.setStyleSheet(f"background-color: {LEFT_PANEL_CONFIG['content_background_color']};")
+        content.setAutoFillBackground(True)
+        content_palette = content.palette()
+        content_palette.setColor(content.backgroundRole(), QColor(LEFT_PANEL_CONFIG['content_background_color']))
+        content.setPalette(content_palette)
         layout = QVBoxLayout(content)
         layout.setSpacing(10)
         
@@ -1863,7 +1866,7 @@ class PrefsEditor(QMainWindow):
         layout.addWidget(name_label)
         
         # Version
-        version_label = QLabel("Version 2.0")
+        version_label = QLabel("Version 2.0 Beta")
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
         
@@ -1878,6 +1881,27 @@ class PrefsEditor(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
+    
+    # Fix QComboBox rendering issue with Fusion style by setting palette colors
+    from qtpy.QtGui import QPalette, QColor
+    palette = app.palette()
+    palette.setColor(QPalette.Highlight, QColor(0xE0, 0x70, 0x20))
+    palette.setColor(QPalette.HighlightedText, QColor(0xFF, 0xFF, 0xFF))
+    palette.setColor(QPalette.Text, QColor(0x00, 0x00, 0x00))
+    palette.setColor(QPalette.Base, QColor(0xFF, 0xFF, 0xFF))
+    app.setPalette(palette)
+    
+    # Ensure dropdown popup items are visible
+    app.setStyleSheet("""
+        QComboBox QAbstractItemView::item {
+            color: #000000;
+            background-color: #FFFFFF;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            color: #FFFFFF;
+            background-color: #E07020;
+        }
+    """)
     
     window = PrefsEditor()
     window.show()
