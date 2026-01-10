@@ -42,7 +42,7 @@ LEFT_PANEL_CONFIG = {
     'icon_size': 190,
     
     # Row 2: Title (fixed height)
-    'row2_height': 60,  # px, 0 = auto
+    'row2_height': 40,  # px, 0 = auto
     'row2_align': 'top',
     'title_font_size': 16,
     'title_max_width': 190,
