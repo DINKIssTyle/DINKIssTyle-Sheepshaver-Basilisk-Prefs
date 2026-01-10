@@ -7,6 +7,7 @@
 note
 /snow
 __pycache__/
+/macemu
 *.pyc
 uv.lock
 .python-version
