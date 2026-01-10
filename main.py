@@ -20,7 +20,7 @@ from qtpy.QtWidgets import (
     QScrollArea, QGridLayout, QDialog, QStyledItemDelegate, QInputDialog,
     QButtonGroup
 )
-from qtpy.QtCore import Qt, QSettings, QSize
+from qtpy.QtCore import Qt, QSettings, QSize, QTimer
 from qtpy.QtGui import QAction, QIcon, QPixmap, QColor, QPalette
 
 
@@ -51,8 +51,8 @@ LEFT_PANEL_CONFIG = {
     # Row 3: Power Button (fixed height)
     'row3_height': 190,  # px, 0 = auto
     'row3_align': 'center',
-    'power_btn_width': 190,
-    'power_btn_height': 190,
+    'power_btn_width': 96,
+    'power_btn_height': 96,
     
     # Row 4: Action Buttons (stretch to fill remaining, align bottom)
     'row4_height': 0,  # 0 = stretch
@@ -2265,16 +2265,24 @@ class LeftPanel(QWidget):
         self.power_btn.setCursor(Qt.PointingHandCursor)
         self.power_btn.setToolTip(tr('launch_tooltip'))
         
-        # Load power switch image
+        # Load power switch images
+        self.pixmap_normal = None
+        self.pixmap_pushed = None
+        
         power_img_name = "68k_pwrsw.png" if self.emulator_type == 'basilisk' else "ppc_pwrsw.png"
         power_img_path = os.path.join(os.path.dirname(__file__), 'res', power_img_name)
         
+        pushed_img_name = "68k_pwrsw_pushed.png" if self.emulator_type == 'basilisk' else "ppc_pwrsw_pushed.png"
+        pushed_img_path = os.path.join(os.path.dirname(__file__), 'res', pushed_img_name)
+        
         if os.path.exists(power_img_path):
-            pixmap = QPixmap(power_img_path)
-            if not pixmap.isNull():
-                pixmap = pixmap.scaled(cfg['power_btn_width'], cfg['power_btn_height'], Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                self.power_btn.setPixmap(pixmap)
-        else:
+            self.pixmap_normal = QPixmap(power_img_path).scaled(cfg['power_btn_width'], cfg['power_btn_height'], Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.power_btn.setPixmap(self.pixmap_normal)
+            
+        if os.path.exists(pushed_img_path):
+            self.pixmap_pushed = QPixmap(pushed_img_path).scaled(cfg['power_btn_width'], cfg['power_btn_height'], Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            
+        if not self.pixmap_normal:
             self.power_btn.setText("⏻ Start")
             self.power_btn.setStyleSheet("""
                 QLabel {
@@ -2283,7 +2291,7 @@ class LeftPanel(QWidget):
                 }
             """)
         
-        self.power_btn.clicked.connect(self.power_clicked.emit)
+        self.power_btn.clicked.connect(self.animate_and_emit_power)
         
         # Alignment for row 3
         align = Qt.AlignHCenter
@@ -2320,6 +2328,16 @@ class LeftPanel(QWidget):
         # Set fixed width for left panel
         self.setFixedWidth(cfg['panel_width'])
     
+    def animate_and_emit_power(self):
+        if self.pixmap_pushed:
+            self.power_btn.setPixmap(self.pixmap_pushed)
+            QTimer.singleShot(1000, self.reset_power_button)
+        self.power_clicked.emit()
+
+    def reset_power_button(self):
+        if self.pixmap_normal:
+            self.power_btn.setPixmap(self.pixmap_normal)
+
     def _get_default_title(self):
         if self.emulator_type == 'basilisk':
             return tr('default_title_68k')
