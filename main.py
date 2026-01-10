@@ -2868,11 +2868,37 @@ class ProfileManagerDialog(QDialog):
                 
             try:
                 # Copy file content
+                new_content_lines = []
+                xpram_source = None
+                xpram_target = None
+                
                 with open(old_path, 'r') as f_src:
-                    content = f_src.read()
+                    for line in f_src:
+                        # Check for xpram
+                        if line.strip().startswith('xpram '):
+                            parts = line.strip().split(' ', 1)
+                            if len(parts) > 1:
+                                xpram_source = parts[1]
+                                # Determine new xpram path
+                                # Convention: if prefs is .basilisk_ii_NAME_prefs, xpram is .basilisk_ii_NAME_xpram
+                                if original_filename.endswith("prefs"):
+                                    new_xpram_filename = new_filename.replace("_prefs", "_xpram")
+                                    xpram_target = os.path.join(directory, new_xpram_filename)
+                                    line = f"xpram {xpram_target}\n"
+                        new_content_lines.append(line)
+
+                # Write new config
                 with open(new_path, 'w') as f_dst:
-                    f_dst.write(content)
-                    
+                    f_dst.writelines(new_content_lines)
+                
+                # Copy xpram file if it exists and we determined a target
+                if xpram_source and xpram_target and os.path.exists(xpram_source):
+                     try:
+                         import shutil
+                         shutil.copy2(xpram_source, xpram_target)
+                     except Exception as ex:
+                         print(f"Failed to copy xpram: {ex}")
+
                 self.refresh_list()
             except Exception as e:
                 QMessageBox.critical(self, tr('error'), str(e))
@@ -2895,7 +2921,29 @@ class ProfileManagerDialog(QDialog):
             ret2 = QMessageBox.question(self, tr('confirm_delete'), tr('delete_msg2'), QMessageBox.Yes | QMessageBox.No)
             if ret2 == QMessageBox.Yes:
                 try:
+                    # Check for xpram to delete
+                    xpram_to_delete = None
+                    try:
+                        with open(path, 'r') as f:
+                             for line in f:
+                                 if line.strip().startswith('xpram '):
+                                     parts = line.strip().split(' ', 1)
+                                     if len(parts) > 1:
+                                         candidate = parts[1]
+                                         # Only delete if it looks like a managed xpram for this profile
+                                         # Construct expected name
+                                         expected_xpram_name = original_filename.replace("_prefs", "_xpram")
+                                         if os.path.basename(candidate) == expected_xpram_name:
+                                             xpram_to_delete = candidate
+                                         break
+                    except:
+                        pass
+
                     os.remove(path)
+                    
+                    if xpram_to_delete and os.path.exists(xpram_to_delete):
+                        os.remove(xpram_to_delete)
+                        
                     self.refresh_list()
                 except Exception as e:
                     QMessageBox.critical(self, tr('error'), str(e))
