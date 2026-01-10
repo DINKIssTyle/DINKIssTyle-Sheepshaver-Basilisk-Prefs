@@ -48,7 +48,10 @@ macemu-patch/
 ### 1. Apply Patch
 
 ```bash
-cd /home/dinki/Desktop/macemu-patch
+git clone https://github.com/DINKIssTyle/DINKIssTyle-Sheepshaver-Basilisk-Prefs.git
+cd DINKIssTyle-Sheepshaver-Basilisk-Prefs/macemu_Shader_Patch
+git clone https://github.com/kanjitalk755/macemu.git
+chmod +x apply_shader_patch.sh
 ./apply_shader_patch.sh
 ```
 
@@ -184,7 +187,10 @@ macemu-patch/
 ### 1. 패치 적용
 
 ```bash
-cd /home/dinki/Desktop/macemu-patch
+git clone https://github.com/DINKIssTyle/DINKIssTyle-Sheepshaver-Basilisk-Prefs.git
+cd DINKIssTyle-Sheepshaver-Basilisk-Prefs/macemu_Shader_Patch
+git clone https://github.com/kanjitalk755/macemu.git
+chmod +x apply_shader_patch.sh
 ./apply_shader_patch.sh
 ```
 
