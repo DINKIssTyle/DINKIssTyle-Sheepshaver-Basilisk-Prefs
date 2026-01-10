@@ -2525,10 +2525,13 @@ class EmulatorTab(QWidget):
         self.sub_tabs = QTabWidget()
         self.sub_tabs.setStyleSheet("""
             QTabWidget::pane {
-                border: 1px solid palette(mid);
+                border: none;
+            }
+            QTabWidget::tab-bar {
+                alignment: center;
             }
             QTabBar::tab {
-                border: 1px solid palette(mid);
+                border: none;
                 padding: 6px;
                 min-width: 30px;
                 min-height: 20px;
@@ -2537,8 +2540,15 @@ class EmulatorTab(QWidget):
                 margin-right: 2px;
                 qproperty-iconSize: 24px 24px;
             }
+            QTabBar::tab:selected {
+                background: palette(base);
+            }
             QTabBar::tab:!selected {
                 margin-top: 2px;
+                background: palette(window);
+            }
+            QTabBar::tab:!selected:hover {
+                background: palette(light);
             }
         """)
         
