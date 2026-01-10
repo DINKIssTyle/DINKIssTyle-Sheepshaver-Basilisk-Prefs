@@ -1,5 +1,7 @@
 # macemu Shader Patch
 
+![screenshot](screenshot.png)
+
 **[한국어 설명은 아래에 있습니다 (Korean description is below)](#macemu-쉐이더-패치-korean)**
 
 Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
