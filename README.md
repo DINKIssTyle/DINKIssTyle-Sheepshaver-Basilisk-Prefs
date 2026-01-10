@@ -27,6 +27,8 @@ The application supports multiple languages. You can change the language in the 
 - 🇺🇸 English
 - 🇰🇷 Korean (한국어)
 - 🇨🇳 Chinese (简体中文)
+- 🇯🇵 Japanese (日本語)
+- 🇪🇸 Spanish (Español)
 
 *Note: You need to restart the application to apply language changes.*
 
