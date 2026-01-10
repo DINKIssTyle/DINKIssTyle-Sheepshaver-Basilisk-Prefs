@@ -216,6 +216,8 @@ TRANSLATIONS = {
         'rename_profile': 'Rename Profile',
         'enter_new_name': 'Enter new profile name:',
         'close': 'Close',
+        'config_missing_title': 'Configuration Missing',
+        'config_missing_msg': 'No configuration file found.\nPlease specify the configuration file path in the Settings tab.',
     },
     'ko': {  # Korean
         'app_title': 'Sheepshaver & Basilisk II 환경설정 편집기',
@@ -351,6 +353,8 @@ TRANSLATIONS = {
         'rename_profile': '프로필 이름 변경',
         'enter_new_name': '새 프로필 이름을 입력하세요:',
         'close': '닫기',
+        'config_missing_title': '설정 파일 없음',
+        'config_missing_msg': '설정 파일을 찾을 수 없습니다.\n설정 탭에서 환경설정 파일 경로를 지정해주세요.',
     },
     'zh': {  # Chinese (Simplified)
         'app_title': 'Sheepshaver & Basilisk II 偏好设置编辑器',
@@ -475,6 +479,8 @@ TRANSLATIONS = {
         'default_profile': '默认',
         'enter_profile_name': '输入新配置文件的名称:',
         'profile_exists': '具有此名称的配置文件已存在。',
+        'config_missing_title': '缺少配置',
+        'config_missing_msg': '未找到配置文件。\n请在设置选项卡中指定配置文件路径。',
     },
     'ja': {  # Japanese
         'app_title': 'Sheepshaver & Basilisk II 環境設定エディタ',
@@ -598,6 +604,8 @@ TRANSLATIONS = {
         'default_profile': 'デフォルト',
         'enter_profile_name': '新規プロファイル名を入力してください:',
         'profile_exists': 'この名前のプロファイルは既に存在します。',
+        'config_missing_title': '設定が見つかりません',
+        'config_missing_msg': '設定ファイルが見つかりません。\n設定タブで設定ファイルのパスを指定してください。',
     },
     'es': {  # Spanish
         'app_title': 'Editor de Preferencias de Sheepshaver y Basilisk II',
@@ -714,6 +722,8 @@ TRANSLATIONS = {
         'error': 'Error',
         'save': 'Guardar',
         'launch': 'Iniciar',
+        'config_missing_title': 'Falta Configuración',
+        'config_missing_msg': 'No se encontró archivo de configuración.\nPor favor, especifique la ruta del archivo en la pestaña Configuración.',
     },
 }
 
@@ -3270,6 +3280,18 @@ class PrefsEditor(QMainWindow):
         """Load global settings and then scan/load profiles."""
         self.settings_tab.load_settings()
         self.scan_and_load_initial_profiles()
+        self.check_initial_configuration()
+
+    def check_initial_configuration(self):
+        """Check if any configuration is valid on startup, else warn."""
+        # Check if we have active configs for either
+        basilisk_ok = self.active_configs.get('basilisk') and os.path.exists(self.active_configs['basilisk'])
+        sheepshaver_ok = self.active_configs.get('sheepshaver') and os.path.exists(self.active_configs['sheepshaver'])
+        
+        if not basilisk_ok and not sheepshaver_ok:
+             QMessageBox.warning(self, tr('config_missing_title'), tr('config_missing_msg'))
+             self.main_tabs.setCurrentIndex(2) # Switch to Settings tab
+
 
     def open_management_dialog(self):
         """Open the profile management dialog."""
