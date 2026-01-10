@@ -1,0 +1,45 @@
+--- /dev/null	2026-01-10 04:01:31.068720627 +0900
++++ macemu_patched/SheepShaver/src/SDL/video_shader.h	2026-01-10 19:39:33.959520554 +0900
+@@ -0,0 +1,42 @@
++/*
++ *  video_shader.h - OpenGL Shader support for SDL2 video
++ *
++ *  Basilisk II (C) 1997-2008 Christian Bauer
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#ifndef VIDEO_SHADER_H
++#define VIDEO_SHADER_H
++
++#include "sysdeps.h"
++#include <SDL.h>
++
++// Initialize shader system
++// Returns true on success
++bool video_shader_init(void);
++
++// Apply shader and render texture to window
++// texture: The source texture containing the emulator framebuffer
++// width/height: Dimensions of the source texture
++void video_shader_render(SDL_Texture *texture, int width, int height,
++                         SDL_Window *window);
++
++// Check if shaders are enabled and working
++bool video_shader_is_enabled(void);
++
++void video_shader_reload(void);
++
++#endif

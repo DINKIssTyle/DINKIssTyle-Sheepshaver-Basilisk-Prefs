@@ -1,0 +1,13 @@
+diff --git a/BasiliskII/src/prefs.cpp b/BasiliskII/src/prefs.cpp
+index d6eb615d..1d036100 100644
+--- a/BasiliskII/src/prefs.cpp
++++ b/BasiliskII/src/prefs.cpp
+@@ -386,7 +386,7 @@ void PrefsRemoveItem(const char *name, int index)
+ 
+ void LoadPrefsFromStream(FILE *f)
+ {
+-	char line[256];
++	char line[4096];  // Increased for long shader_params
+ 	while(fgets(line, sizeof(line), f)) {
+ 		// Remove newline, if present
+ 		int len = strlen(line);

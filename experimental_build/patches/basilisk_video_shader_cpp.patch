@@ -1,0 +1,498 @@
+--- /dev/null	2026-01-10 04:01:31.068720627 +0900
++++ macemu_patched/BasiliskII/src/SDL/video_shader.cpp	2026-01-10 19:39:33.957766068 +0900
+@@ -0,0 +1,495 @@
++/*
++ *  video_shader.cpp - OpenGL Shader support for SDL2 video
++ *
++ *  Basilisk II (C) 1997-2008 Christian Bauer
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include "video_shader.h"
++#include "prefs.h"
++#include "sysdeps.h"
++#include "user_strings.h"
++
++// SDL2 OpenGL headers
++#define GL_GLEXT_PROTOTYPES 1
++#include <SDL_opengl.h>
++#include <fstream>
++#include <iostream>
++#include <map>
++#include <sstream>
++#include <string>
++#include <vector>
++
++struct ShaderParam {
++  std::string name;
++  std::string desc;
++  float value;
++  float min;
++  float max;
++  float step;
++  float default_value;
++};
++
++struct ShaderPass {
++  GLuint program;
++  GLuint fbo;
++  GLuint texture; // Texture attached to FBO
++  GLint loc_MVPMatrix;
++  GLint loc_FrameDirection;
++  GLint loc_FrameCount;
++  GLint loc_OutputSize;
++  GLint loc_TextureSize;
++  GLint loc_InputSize;
++  GLint loc_Texture;
++  std::vector<ShaderParam> params;
++
++  ShaderPass()
++      : program(0), fbo(0), texture(0), loc_MVPMatrix(-1),
++        loc_FrameDirection(-1), loc_FrameCount(-1), loc_OutputSize(-1),
++        loc_TextureSize(-1), loc_InputSize(-1), loc_Texture(-1) {}
++};
++
++static std::vector<ShaderPass> passes;
++static std::vector<std::pair<std::string, float>> user_params;
++static bool shader_enabled = false;
++static int frame_count = 0;
++static int current_fbo_width = 0;
++static int current_fbo_height = 0;
++
++static void parse_user_params() {
++  user_params.clear();
++  const char *params_str = PrefsFindString("shader_params");
++  if (!params_str || !*params_str)
++    return;
++
++  std::string s(params_str);
++  size_t start = 0;
++  size_t end = s.find(',');
++
++  while (end != std::string::npos) {
++    std::string pair = s.substr(start, end - start);
++    size_t eq = pair.find('=');
++    if (eq != std::string::npos) {
++      std::string key = pair.substr(0, eq);
++      // Trim spaces
++      while (key.size() && (key[0] == ' ' || key[0] == '\t'))
++        key.erase(0, 1);
++      while (key.size() && (key.back() == ' ' || key.back() == '\t'))
++        key.pop_back();
++
++      try {
++        float val = std::stof(pair.substr(eq + 1));
++        user_params.push_back({key, val});
++      } catch (...) {
++      }
++    }
++    start = end + 1;
++    end = s.find(',', start);
++  }
++
++  // Last one
++  std::string pair = s.substr(start);
++  size_t eq = pair.find('=');
++  if (eq != std::string::npos) {
++    std::string key = pair.substr(0, eq);
++    while (key.size() && (key[0] == ' ' || key[0] == '\t'))
++      key.erase(0, 1);
++    while (key.size() && (key.back() == ' ' || key.back() == '\t'))
++      key.pop_back();
++    try {
++      float val = std::stof(pair.substr(eq + 1));
++      user_params.push_back({key, val});
++    } catch (...) {
++    }
++  }
++}
++
++// Helper to load file content
++static std::string load_file(const char *path) {
++  if (!path)
++    return "";
++  std::ifstream f(path);
++  if (!f.is_open())
++    return "";
++  std::stringstream buffer;
++  buffer << f.rdbuf();
++  return buffer.str();
++}
++
++static GLuint compile_shader(GLenum type, const std::string &source) {
++  GLuint shader = glCreateShader(type);
++
++  // Inject #version and #define
++  std::string preamble = "#version 120\n";
++  preamble += "#define PARAMETER_UNIFORM\n";
++  if (type == GL_VERTEX_SHADER) {
++    preamble += "#define VERTEX\n";
++  } else {
++    preamble += "#define FRAGMENT\n";
++  }
++
++  // Simple parser to filter out #pragma parameter lines as they might confuse
++  // some drivers and are not standard GLSL
++  std::stringstream ss(source);
++  std::string line;
++  std::string filtered_source;
++  while (std::getline(ss, line)) {
++    if (line.find("#pragma parameter") == 0)
++      continue;
++    filtered_source += line + "\n";
++  }
++
++  const char *sources[2] = {preamble.c_str(), filtered_source.c_str()};
++  glShaderSource(shader, 2, sources, NULL);
++  glCompileShader(shader);
++
++  GLint status;
++  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
++  if (status == GL_FALSE) {
++    char buffer[4096];
++    glGetShaderInfoLog(shader, sizeof(buffer), NULL, buffer);
++    printf("Shader compile error (%s):\n%s\n",
++           (type == GL_VERTEX_SHADER ? "VERTEX" : "FRAGMENT"), buffer);
++    glDeleteShader(shader);
++    return 0;
++  }
++  return shader;
++}
++
++static void free_passes() {
++  for (size_t i = 0; i < passes.size(); ++i) {
++    if (passes[i].program)
++      glDeleteProgram(passes[i].program);
++    if (passes[i].fbo)
++      glDeleteFramebuffers(1, &passes[i].fbo);
++    if (passes[i].texture)
++      glDeleteTextures(1, &passes[i].texture);
++  }
++  passes.clear();
++  shader_enabled = false;
++  current_fbo_width = 0;
++  current_fbo_height = 0;
++}
++
++// Ensure FBOs are correct size
++static void check_fbos(int width, int height) {
++  if (width == current_fbo_width && height == current_fbo_height)
++    return;
++
++  for (size_t i = 0; i < passes.size(); ++i) {
++    // Last pass renders to screen, so it doesn't need an FBO
++    if (i == passes.size() - 1)
++      continue;
++
++    if (passes[i].fbo == 0) {
++      glGenFramebuffers(1, &passes[i].fbo);
++      glGenTextures(1, &passes[i].texture);
++    }
++
++    glBindTexture(GL_TEXTURE_2D, passes[i].texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, NULL);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++
++    glBindFramebuffer(GL_FRAMEBUFFER, passes[i].fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           passes[i].texture, 0);
++
++    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
++    if (status != GL_FRAMEBUFFER_COMPLETE) {
++      printf("FBO Error for pass %zu: %x\n", i, status);
++    }
++  }
++  glBindFramebuffer(GL_FRAMEBUFFER, 0); // Restore default
++  current_fbo_width = width;
++  current_fbo_height = height;
++}
++
++bool video_shader_init(void) {
++  std::vector<std::string> shader_paths;
++  const char *shader_path_str;
++  int i = 0;
++
++  // Iterate over all 'shader' preference entries
++  while ((shader_path_str = PrefsFindString("shader", i++))) {
++    if (!shader_path_str || !*shader_path_str)
++      continue;
++
++    std::stringstream ss(shader_path_str);
++    std::string segment;
++    while (std::getline(ss, segment, ',')) {
++      // Trim whitespace
++      size_t first = segment.find_first_not_of(' ');
++      if (std::string::npos != first) {
++        size_t last = segment.find_last_not_of(' ');
++        shader_paths.push_back(segment.substr(first, (last - first + 1)));
++      }
++    }
++  }
++
++  if (shader_paths.empty())
++    return false;
++
++  parse_user_params();
++
++  free_passes();
++
++  printf("Initializing %zu shader(s)\n", shader_paths.size());
++
++  for (const auto &path : shader_paths) {
++    std::string shader_source = load_file(path.c_str());
++    if (shader_source.empty()) {
++      printf("Failed to load shader file: %s\n", path.c_str());
++      free_passes();
++      return false;
++    }
++
++    GLuint vert = compile_shader(GL_VERTEX_SHADER, shader_source);
++    if (!vert) {
++      free_passes();
++      return false;
++    }
++
++    GLuint frag = compile_shader(GL_FRAGMENT_SHADER, shader_source);
++    if (!frag) {
++      glDeleteShader(vert);
++      free_passes();
++      return false;
++    }
++
++    GLuint prog = glCreateProgram();
++    glAttachShader(prog, vert);
++    glAttachShader(prog, frag);
++
++    // Bind attributes before linking
++    glBindAttribLocation(prog, 0, "VertexCoord");
++    glBindAttribLocation(prog, 1, "TexCoord");
++    glBindAttribLocation(prog, 2, "COLOR");
++
++    glLinkProgram(prog);
++
++    GLint status;
++    glGetProgramiv(prog, GL_LINK_STATUS, &status);
++    if (status == GL_FALSE) {
++      char buffer[4096];
++      glGetProgramInfoLog(prog, sizeof(buffer), NULL, buffer);
++      printf("Shader link error for %s:\n%s\n", path.c_str(), buffer);
++      glDeleteProgram(prog);
++      glDeleteShader(vert);
++      glDeleteShader(frag);
++      free_passes();
++      return false;
++    }
++
++    glDeleteShader(vert);
++    glDeleteShader(frag);
++
++    ShaderPass pass;
++    pass.program = prog;
++
++    // Get Uniform Locations
++    pass.loc_MVPMatrix = glGetUniformLocation(prog, "MVPMatrix");
++    pass.loc_FrameDirection = glGetUniformLocation(prog, "FrameDirection");
++    pass.loc_FrameCount = glGetUniformLocation(prog, "FrameCount");
++    pass.loc_OutputSize = glGetUniformLocation(prog, "OutputSize");
++    pass.loc_TextureSize = glGetUniformLocation(prog, "TextureSize");
++    pass.loc_InputSize = glGetUniformLocation(prog, "InputSize");
++    pass.loc_Texture = glGetUniformLocation(prog, "Texture");
++
++    // Parse #pragma parameter
++    std::stringstream stream(shader_source);
++    std::string line;
++    while (std::getline(stream, line)) {
++      if (line.find("#pragma parameter") != std::string::npos) {
++        std::stringstream iss(line);
++        std::string pragma, parameter, name, desc_quoted;
++        float def, min, max, step;
++
++        iss >> pragma >> parameter >> name; // skip #pragma parameter
++
++        // Extract quoted description
++        size_t first_quote = line.find('\"');
++        size_t last_quote = line.rfind('\"');
++        if (first_quote != std::string::npos &&
++            last_quote != std::string::npos && last_quote > first_quote) {
++          desc_quoted =
++              line.substr(first_quote + 1, last_quote - first_quote - 1);
++
++          // Parse rest of values after the quoted string
++          std::string rest = line.substr(last_quote + 1);
++          std::stringstream rest_iss(rest);
++          if (rest_iss >> def >> min >> max >> step) {
++            ShaderParam param;
++            param.name = name;
++            param.desc = desc_quoted;
++            param.default_value = def;
++            param.value = def;
++            param.min = min;
++            param.max = max;
++            param.step = step;
++
++            // Apply user override if present
++            for (const auto &p : user_params) {
++              if (p.first == name) {
++                param.value = p.second;
++                break;
++              }
++            }
++
++            pass.params.push_back(param);
++          }
++        }
++      }
++    }
++
++    passes.push_back(pass);
++  }
++
++  shader_enabled = true;
++  printf("Shader(s) compiled and linked successfully. Total passes: %zu\n",
++         passes.size());
++  return true;
++}
++
++void video_shader_render(SDL_Texture *texture, int valid_width,
++                         int valid_height, SDL_Window *window) {
++  if (!shader_enabled || passes.empty())
++    return;
++
++  int tex_w, tex_h;
++  if (SDL_QueryTexture(texture, NULL, NULL, &tex_w, &tex_h) < 0) {
++    printf("Failed to query texture: %s\n", SDL_GetError());
++    return;
++  }
++
++  int win_w, win_h;
++  SDL_GL_GetDrawableSize(window, &win_w, &win_h);
++
++  // Ensure intermediate FBOs match window size
++  if (passes.size() > 1) {
++    check_fbos(win_w, win_h);
++  }
++
++  // Setup Quad
++  glEnableVertexAttribArray(0); // VertexCoord
++  glEnableVertexAttribArray(1); // TexCoord
++  float pos[] = {-1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f};
++  // SDL Textures are Top-Left Origin (0,0 is Top-Left).
++  // We map Screen Top-Left (-1, 1) to Texture Top-Left (0,0).
++  // Screen Bottom-Left (-1, -1) to Texture Bottom-Left (0,1).
++  float tex_coords_sdl[] = {0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
++
++  // OpenGL FBO Textures are Bottom-Left Origin (0,0 is Bottom-Left).
++  // We map Screen Top-Left (-1, 1) to Texture Top-Left (0,1).
++  // Screen Bottom-Left (-1, -1) to Texture Bottom-Left (0,0).
++  float tex_coords_fbo[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
++
++  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, pos);
++  // Default to SDL coords, will override in loop if needed
++  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, tex_coords_sdl);
++
++  float mvp[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
++                   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
++
++  for (size_t i = 0; i < passes.size(); ++i) {
++    ShaderPass &pass = passes[i];
++
++    // Select appropriate texture coordinates
++    if (i == 0) {
++      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, tex_coords_sdl);
++    } else {
++      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, tex_coords_fbo);
++    }
++    bool last_pass = (i == passes.size() - 1);
++
++    if (last_pass) {
++      glBindFramebuffer(GL_FRAMEBUFFER, 0); // Screen
++      glViewport(0, 0, win_w, win_h);
++      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++      glClear(GL_COLOR_BUFFER_BIT);
++    } else {
++      glBindFramebuffer(GL_FRAMEBUFFER, pass.fbo);
++      glViewport(0, 0, win_w, win_h);
++    }
++
++    glUseProgram(pass.program);
++
++    // Apply Params
++    for (const auto &param : pass.params) {
++      GLint loc = glGetUniformLocation(pass.program, param.name.c_str());
++      if (loc >= 0) {
++        glUniform1f(loc, param.value);
++      }
++    }
++
++    glActiveTexture(GL_TEXTURE0);
++    if (i == 0) {
++      // First pass: input is the emulator texture
++      float tex_w_fl, tex_h_fl;
++      SDL_GL_BindTexture(texture, &tex_w_fl, &tex_h_fl);
++    } else {
++      // Subsequent passes: input is previous FBO texture
++      glBindTexture(GL_TEXTURE_2D, passes[i - 1].texture);
++    }
++
++    if (pass.loc_Texture != -1)
++      glUniform1i(pass.loc_Texture, 0);
++    if (pass.loc_MVPMatrix != -1)
++      glUniformMatrix4fv(pass.loc_MVPMatrix, 1, GL_FALSE, mvp);
++    if (pass.loc_FrameCount != -1)
++      glUniform1i(pass.loc_FrameCount, frame_count);
++    if (pass.loc_FrameDirection != -1)
++      glUniform1i(pass.loc_FrameDirection, 1);
++
++    if (pass.loc_OutputSize != -1)
++      glUniform2f(pass.loc_OutputSize, (float)win_w, (float)win_h);
++
++    float input_w = (i == 0) ? (float)tex_w : (float)win_w;
++    float input_h = (i == 0) ? (float)tex_h : (float)win_h;
++
++    if (pass.loc_TextureSize != -1)
++      glUniform2f(pass.loc_TextureSize, input_w, input_h);
++    if (pass.loc_InputSize != -1)
++      glUniform2f(pass.loc_InputSize, input_w, input_h);
++
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++
++    if (i == 0) {
++      SDL_GL_UnbindTexture(texture);
++    }
++  }
++
++  frame_count++;
++
++  glDisableVertexAttribArray(0);
++  glDisableVertexAttribArray(1);
++
++  glUseProgram(0);
++  glBindFramebuffer(GL_FRAMEBUFFER, 0);
++}
++
++bool video_shader_is_enabled(void) { return shader_enabled; }
++
++void video_shader_reload(void) {
++  if (!video_shader_is_enabled())
++    return;
++  printf("Reloading shaders...\n");
++  video_shader_init();
++  // FBO check will happen next frame
++}

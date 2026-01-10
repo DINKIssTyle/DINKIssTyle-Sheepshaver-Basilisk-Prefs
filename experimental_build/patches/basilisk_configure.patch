@@ -1,0 +1,16 @@
+--- macemu/BasiliskII/src/Unix/configure.ac	2026-01-10 22:48:45.895383907 +0900
++++ macemu_patched/BasiliskII/src/Unix/configure.ac	2026-01-09 21:29:56.455859248 +0900
+@@ -893,7 +893,12 @@
+ fi
+ if [[ "x$WANT_SDL_VIDEO" = "xyes" ]]; then
+   AC_DEFINE(USE_SDL_VIDEO, 1, [Define to enable SDL video graphics support])
+-  VIDEOSRCS="../SDL/video_sdl.cpp ../SDL/video_sdl2.cpp ../SDL/video_sdl3.cpp "
++  VIDEOSRCS="../SDL/video_sdl.cpp ../SDL/video_sdl2.cpp ../SDL/video_sdl3.cpp ../SDL/video_shader.cpp "
++  case "$target_os" in
++  linux*)
++    LIBS="$LIBS -lGL"
++    ;;
++  esac
+   KEYCODES="../SDL/keycodes"
+   if [[ "x$ac_cv_framework_Carbon" = "xyes" ]]; then
+     AC_MSG_CHECKING([whether __LP64__ is defined])

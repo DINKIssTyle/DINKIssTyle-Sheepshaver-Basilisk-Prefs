@@ -1,0 +1,29 @@
+--- macemu/SheepShaver/src/Unix/configure.ac	2026-01-10 22:48:45.935601136 +0900
++++ macemu_patched/SheepShaver/src/Unix/configure.ac	2026-01-09 22:21:44.485995385 +0900
+@@ -236,7 +236,7 @@
+       PKG_CHECK_MODULES([sdl2], [sdl2 >= 2.0], [
+         CFLAGS="$CFLAGS $sdl2_CFLAGS"
+         CXXFLAGS="$CXXFLAGS $sdl2_CFLAGS"
+-        LIBS="$LIBS $sdl2_LIBS"
++        LIBS="$LIBS $sdl2_LIBS -lGL"
+         AC_DEFINE([USE_SDL2], [1], [Use SDL2])
+         WANT_SDL_VERSION_MAJOR=2
+       ], [
+@@ -247,7 +247,7 @@
+       PKG_CHECK_MODULES([sdl], [sdl >= 1.2], [
+         CFLAGS="$CFLAGS $sdl_CFLAGS"
+         CXXFLAGS="$CXXFLAGS $sdl_CFLAGS"
+-        LIBS="$LIBS $sdl_LIBS"
++        LIBS="$LIBS $sdl_LIBS -lGL"
+         WANT_SDL_VERSION_MAJOR=1
+       ], [
+         WANT_SDL=no
+@@ -774,7 +774,7 @@
+ fi
+ if [[ "x$WANT_SDL_VIDEO" = "xyes" ]]; then
+   AC_DEFINE(USE_SDL_VIDEO, 1, [Define to enable SDL video graphics support.])
+-  VIDEOSRCS="../SDL/video_sdl.cpp ../SDL/video_sdl2.cpp ../SDL/video_sdl3.cpp"
++  VIDEOSRCS="../SDL/video_sdl.cpp ../SDL/video_sdl2.cpp ../SDL/video_sdl3.cpp ../SDL/video_shader.cpp"
+   KEYCODES="../SDL/keycodes"
+   if [[ "x$ac_cv_framework_Carbon" = "xyes" ]]; then
+     AC_MSG_CHECKING([whether __LP64__ is defined])
