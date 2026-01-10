@@ -99,9 +99,13 @@ TRANSLATIONS = {
         'disk_create_error': 'Failed to create disk image.',
         'up': '▲ Up',
         'down': '▼ Down',
+        'cdrom_column': 'CD-ROM',
         'storage_options': 'Storage Options',
         'extfs_path': 'ExtFS Path:',
         'rom_file': 'ROM File:',
+        'boot_from': 'Boot From:',
+        'boot_any': 'Any',
+        'boot_cdrom': 'CD-ROM',
         'boot_drive': 'Boot Drive:',
         'boot_driver': 'Boot Driver:',
         'disable_cdrom': 'Disable CD-ROM',
@@ -240,9 +244,13 @@ TRANSLATIONS = {
         'disk_create_error': '디스크 이미지 생성에 실패했습니다.',
         'up': '▲ 위로',
         'down': '▼ 아래로',
+        'cdrom_column': 'CD-ROM',
         'storage_options': '저장소 옵션',
         'extfs_path': 'ExtFS 경로:',
         'rom_file': 'ROM 파일:',
+        'boot_from': '부팅:',
+        'boot_any': '자동 (Any)',
+        'boot_cdrom': 'CD-ROM',
         'boot_drive': '부트 드라이브:',
         'boot_driver': '부트 드라이버:',
         'disable_cdrom': 'CD-ROM 비활성화',
@@ -371,9 +379,13 @@ TRANSLATIONS = {
         'disk_create_error': '磁盘镜像创建失败。',
         'up': '▲ 上移',
         'down': '▼ 下移',
+        'cdrom_column': 'CD-ROM',
         'storage_options': '存储选项',
         'extfs_path': 'ExtFS 路径:',
         'rom_file': 'ROM 文件:',
+        'boot_from': '启动:',
+        'boot_any': '任意 (Any)',
+        'boot_cdrom': 'CD-ROM',
         'boot_drive': '启动驱动器:',
         'boot_driver': '启动驱动程序:',
         'disable_cdrom': '禁用 CD-ROM',
@@ -490,9 +502,13 @@ TRANSLATIONS = {
         'disk_create_error': 'ディスクイメージの作成に失敗しました。',
         'up': '▲ 上へ',
         'down': '▼ 下へ',
+        'cdrom_column': 'CD-ROM',
         'storage_options': 'ストレージオプション',
         'extfs_path': 'ExtFS パス:',
         'rom_file': 'ROM ファイル:',
+        'boot_from': '起動:',
+        'boot_any': '任意 (Any)',
+        'boot_cdrom': 'CD-ROM',
         'boot_drive': 'ブートドライブ:',
         'boot_driver': 'ブートドライバ:',
         'disable_cdrom': 'CD-ROM を無効にする',
@@ -609,9 +625,13 @@ TRANSLATIONS = {
         'disk_create_error': 'Error al crear la imagen de disco.',
         'up': '▲ Arriba',
         'down': '▼ Abajo',
+        'cdrom_column': 'CD-ROM',
         'storage_options': 'Opciones de Almacenamiento',
         'extfs_path': 'Ruta ExtFS:',
         'rom_file': 'Archivo ROM:',
+        'boot_from': 'Arrancar de:',
+        'boot_any': 'Cualquiera',
+        'boot_cdrom': 'CD-ROM',
         'boot_drive': 'Unidad de Arranque:',
         'boot_driver': 'Controlador de Arranque:',
         'disable_cdrom': 'Deshabilitar CD-ROM',
@@ -741,9 +761,13 @@ class ConfigParser:
                 
                 # Handle multiple disk entries
                 if key == 'disk':
-                    disks.append((value, False))
+                    disks.append((value, 0, False)) # 0 = Disk
                 elif key == '#disk':
-                    disks.append((value, True))
+                    disks.append((value, 0, True))
+                elif key == 'cdrom':
+                    disks.append((value, 1, False)) # 1 = CD-ROM
+                elif key == '#cdrom':
+                    disks.append((value, 1, True))
                 # Handle multiple shader entries
                 elif key == 'shader':
                     shaders.append((value, False))
@@ -797,11 +821,17 @@ class ConfigParser:
         """Save configuration dictionary to file."""
         with open(filepath, 'w') as f:
             # Write disks
-            for disk, disabled in config.get('disks', []):
-                if disabled:
-                    f.write(f"#disk {disk}\n")
+            for disk_entry in config.get('disks', []):
+                # Handle both old (2-tuple) and new (3-tuple) formats for robustness
+                if len(disk_entry) == 3:
+                     path, disk_type, disabled = disk_entry
                 else:
-                    f.write(f"disk {disk}\n")
+                     path, disabled = disk_entry
+                     disk_type = 0 # Default to disk
+                
+                prefix = "#" if disabled else ""
+                key = "cdrom" if disk_type == 1 else "disk"
+                f.write(f"{prefix}{key} {path}\n")
 
             # Write shaders
             for shader, disabled in config.get('shaders', []):
@@ -832,8 +862,25 @@ class ConfigParser:
 # ============================================================================
 
 class PathDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        path = index.data()
+        if path and isinstance(path, str):
+            # Show only .../parent/filename
+            if os.path.sep in path:
+                parts = path.split(os.path.sep)
+                if len(parts) > 2:
+                    # Linux/Unix paths start with empty string due to leading /
+                    # e.g. /home/user -> ['', 'home', 'user']
+                    # We want the last two parts
+                    option.text = f"...{os.path.sep}{parts[-2]}{os.path.sep}{parts[-1]}"
+                else:
+                    option.text = path
+            
     def paint(self, painter, option, index):
-        option.textElideMode = Qt.ElideLeft
+        # We don't need ElideLeft anymore since we manually shortened it, 
+        # but keep ElideMiddle just in case the shortened path is still too long
+        option.textElideMode = Qt.ElideMiddle
         super().paint(painter, option, index)
 
 
@@ -1015,10 +1062,11 @@ class DrivesTab(QWidget):
         disk_layout = QVBoxLayout(disk_group)
         
         self.disk_table = QTableWidget()
-        self.disk_table.setColumnCount(2)
-        self.disk_table.setHorizontalHeaderLabels([tr('disk_image'), tr('disabled')])
+        self.disk_table.setColumnCount(3)
+        self.disk_table.setHorizontalHeaderLabels([tr('disk_image'), tr('cdrom_column'), tr('disabled')])
         self.disk_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.disk_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.disk_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.disk_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.disk_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.disk_table.verticalHeader().setFixedWidth(25)  # Make numbering column wider
@@ -1077,16 +1125,17 @@ class DrivesTab(QWidget):
         rom_layout.addWidget(rom_btn)
         storage_layout.addLayout(rom_layout, 1, 1, 1, 5)
         
-        # Row 2: Boot Drive | Boot Driver | Disable CD-ROM
+        # Row 2: Boot Drive | Boot From | Disable CD-ROM
         storage_layout.addWidget(QLabel(tr('boot_drive')), 2, 0)
         self.boot_drive = QSpinBox()
         self.boot_drive.setRange(0, 255)
         storage_layout.addWidget(self.boot_drive, 2, 1)
         
-        storage_layout.addWidget(QLabel(tr('boot_driver')), 2, 2)
-        self.boot_driver = QSpinBox()
-        self.boot_driver.setRange(0, 255)
-        storage_layout.addWidget(self.boot_driver, 2, 3)
+        storage_layout.addWidget(QLabel(tr('boot_from')), 2, 2)
+        self.boot_from = QComboBox()
+        self.boot_from.addItem(tr('boot_any'), 0)
+        self.boot_from.addItem(tr('boot_cdrom'), -62)
+        storage_layout.addWidget(self.boot_from, 2, 3)
         
         self.no_cdrom = QCheckBox(tr('disable_cdrom'))
         storage_layout.addWidget(self.no_cdrom, 2, 4, 1, 2)
@@ -1107,8 +1156,8 @@ class DrivesTab(QWidget):
                 size_bytes = dialog.size_mb * 1024 * 1024
                 with open(dialog.file_path, 'wb') as f:
                     f.truncate(size_bytes)
-                # Add to disk list
-                self._add_disk_row(dialog.file_path, False)
+                # Add to disk list (0=Disk)
+                self._add_disk_row(dialog.file_path, 0, False)
                 QMessageBox.information(self, tr('disk_image'), tr('disk_create_success'))
             except Exception as e:
                 QMessageBox.critical(self, tr('error'), f"{tr('disk_create_error')}\n{str(e)}")
@@ -1116,12 +1165,12 @@ class DrivesTab(QWidget):
     def add_disk(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Select Disk Image",
-            "", "Disk Images (*.img *.dmg *.iso *.hfv);;All Files (*)"
+            "", "Disk Images (*.img *.dmg *.iso *.hfv *.toast);;All Files (*)"
         )
         if path:
-            self._add_disk_row(path, False)
+            self._add_disk_row(path, 0, False)
             
-    def _add_disk_row(self, path, disabled):
+    def _add_disk_row(self, path, disk_type, disabled):
         row = self.disk_table.rowCount()
         self.disk_table.insertRow(row)
         
@@ -1131,21 +1180,25 @@ class DrivesTab(QWidget):
         path_item.setToolTip(path) # Set tooltip
         self.disk_table.setItem(row, 0, path_item)
         
-        # Checkbox item
-        # We use a cell widget or a checkstate. Using cell widget for better centering if needed, but checkstate is standard.
-        # Let's use QTableWidgetItem with checkstate for simplicity, but it's text+check. 
-        # Ideally we want a specialized column. 
-        # Let's use a widget for the disabled column to be explicit.
+        # CD-ROM Checkbox (Col 1)
+        cdrom_chk = QCheckBox()
+        cdrom_chk.setChecked(disk_type == 1)
+        cdrom_widget = QWidget()
+        cdrom_layout = QHBoxLayout(cdrom_widget)
+        cdrom_layout.addWidget(cdrom_chk)
+        cdrom_layout.setAlignment(Qt.AlignCenter)
+        cdrom_layout.setContentsMargins(0, 0, 0, 0)
+        self.disk_table.setCellWidget(row, 1, cdrom_widget)
         
-        chk = QCheckBox()
-        chk.setChecked(disabled)
-        # Center the checkbox
-        cell_widget = QWidget()
-        layout = QHBoxLayout(cell_widget)
-        layout.addWidget(chk)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.disk_table.setCellWidget(row, 1, cell_widget)
+        # Disabled Checkbox (Col 2)
+        disabled_chk = QCheckBox()
+        disabled_chk.setChecked(disabled)
+        disabled_widget = QWidget()
+        disabled_layout = QHBoxLayout(disabled_widget)
+        disabled_layout.addWidget(disabled_chk)
+        disabled_layout.setAlignment(Qt.AlignCenter)
+        disabled_layout.setContentsMargins(0, 0, 0, 0)
+        self.disk_table.setCellWidget(row, 2, disabled_widget)
     
     def remove_disk(self):
         row = self.disk_table.currentRow()
@@ -1167,19 +1220,22 @@ class DrivesTab(QWidget):
     def _swap_rows(self, row1, row2):
         # Swap content
         path1 = self.disk_table.item(row1, 0).text()
-        chk1 = self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).isChecked()
+        cdrom1 = self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).isChecked()
+        disabled1 = self.disk_table.cellWidget(row1, 2).findChild(QCheckBox).isChecked()
         
         path2 = self.disk_table.item(row2, 0).text()
-        chk2 = self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).isChecked()
+        cdrom2 = self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).isChecked()
+        disabled2 = self.disk_table.cellWidget(row2, 2).findChild(QCheckBox).isChecked()
         
         self.disk_table.item(row1, 0).setText(path2)
-        # Should update tooltip too
         self.disk_table.item(row1, 0).setToolTip(path2)
-        self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).setChecked(chk2)
+        self.disk_table.cellWidget(row1, 1).findChild(QCheckBox).setChecked(cdrom2)
+        self.disk_table.cellWidget(row1, 2).findChild(QCheckBox).setChecked(disabled2)
         
         self.disk_table.item(row2, 0).setText(path1)
         self.disk_table.item(row2, 0).setToolTip(path1)
-        self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).setChecked(chk1)
+        self.disk_table.cellWidget(row2, 1).findChild(QCheckBox).setChecked(cdrom1)
+        self.disk_table.cellWidget(row2, 2).findChild(QCheckBox).setChecked(disabled1)
     
     def browse_file(self, line_edit, filter_str):
         path, _ = QFileDialog.getOpenFileName(self, "Select File", "", filter_str)
@@ -1194,28 +1250,42 @@ class DrivesTab(QWidget):
     def load_config(self, config: dict):
         self.disk_table.setRowCount(0)
         for disk_entry in config.get('disks', []):
-            if isinstance(disk_entry, tuple):
-                path, disabled = disk_entry
+            if len(disk_entry) == 3:
+                path, disk_type, disabled = disk_entry
             else:
-                path, disabled = disk_entry, False
-            self._add_disk_row(path, disabled)
+                path, disabled = disk_entry
+                disk_type = 0 # Default to Disk
+            self._add_disk_row(path, disk_type, disabled)
         self.extfs_edit.setText(str(config.get('extfs', '')))
         self.rom_edit.setText(str(config.get('rom', '')))
         self.boot_drive.setValue(config.get('bootdrive', 0))
-        self.boot_driver.setValue(config.get('bootdriver', 0))
+        
+        # Set Boot From ComboBox
+        bootdriver_val = config.get('bootdriver', 0)
+        index = self.boot_from.findData(bootdriver_val)
+        if index != -1:
+            self.boot_from.setCurrentIndex(index)
+        else:
+            self.boot_from.setCurrentIndex(0) # Default to Any
+            
         self.no_cdrom.setChecked(config.get('nocdrom', False))
     
     def save_config(self, config: dict):
         disks = []
         for i in range(self.disk_table.rowCount()):
             path = self.disk_table.item(i, 0).text()
-            disabled = self.disk_table.cellWidget(i, 1).findChild(QCheckBox).isChecked()
-            disks.append((path, disabled))
+            # Col 1: CD-ROM
+            is_cdrom = self.disk_table.cellWidget(i, 1).findChild(QCheckBox).isChecked()
+            disk_type = 1 if is_cdrom else 0
+            # Col 2: Disabled
+            disabled = self.disk_table.cellWidget(i, 2).findChild(QCheckBox).isChecked()
+            disks.append((path, disk_type, disabled))
+        
         config['disks'] = disks
         config['extfs'] = self.extfs_edit.text()
         config['rom'] = self.rom_edit.text()
         config['bootdrive'] = self.boot_drive.value()
-        config['bootdriver'] = self.boot_driver.value()
+        config['bootdriver'] = self.boot_from.currentData()
         config['nocdrom'] = self.no_cdrom.isChecked()
 
 
@@ -1673,25 +1743,30 @@ class CpuMemoryTab(QWidget):
             cpu_layout = QFormLayout(cpu_group)
             
             self.cpu_type = QComboBox()
-            self.cpu_type.addItems(["68020", "68030", "68040"])
+            # Combined CPU/FPU options
+            # Data format: (cpu_type, fpu_enabled)
+            self.cpu_options = [
+                ("68020", (2, False)),
+                ("68020 with FPU", (2, True)),
+                ("68030", (3, False)),
+                ("68030 with FPU", (3, True)),
+                ("68040 with FPU", (4, True))
+            ]
+            for name, _ in self.cpu_options:
+                self.cpu_type.addItem(name)
             cpu_layout.addRow(tr('cpu_type'), self.cpu_type)
             
             self.model_id = QComboBox()
             models = [
-                ("Mac IIci (Default)", 5),
-                ("Mac IIfx", 6),
-                ("Quadra 700", 12),
-                ("Quadra 800", 23),
-                ("Quadra 650", 24),
-                ("Quadra 900", 14),
-                ("Quadra 950", 16)
+                ("Mac IIci (Mac OS 7.x)", 5),
+                ("Quadra 900 (Mac OS 8.x)", 14)
             ]
             for name, mid in models:
                 self.model_id.addItem(name, mid)
             cpu_layout.addRow(tr('model_id'), self.model_id)
             
-            self.fpu_enabled = QCheckBox(tr('enable_fpu'))
-            cpu_layout.addRow("", self.fpu_enabled)
+            # self.fpu_enabled = QCheckBox(tr('enable_fpu')) # Merged into CPU select
+            # cpu_layout.addRow("", self.fpu_enabled)
             
             layout.addWidget(cpu_group)
         
@@ -1752,17 +1827,24 @@ class CpuMemoryTab(QWidget):
         
         if self.emulator_type == 'basilisk':
             cpu = config.get('cpu', 3)
-            cpu_map = {2: 0, 3: 1, 4: 2}
-            self.cpu_type.setCurrentIndex(cpu_map.get(cpu, 1))
+            fpu = config.get('fpu', True)
+            
+            # Find matching index in combined options
+            target_idx = 3 # Default to 68030 with FPU
+            for idx, (_, (c_val, f_val)) in enumerate(self.cpu_options):
+                if c_val == cpu and f_val == fpu:
+                    target_idx = idx
+                    break
+            self.cpu_type.setCurrentIndex(target_idx)
             
             model_val = config.get('modelid', 5)
             index = self.model_id.findData(model_val)
             if index >= 0:
                 self.model_id.setCurrentIndex(index)
             else:
-                self.model_id.setCurrentIndex(0) # Default to first item (IIci)
+                self.model_id.setCurrentIndex(0) # Default to first item
                 
-            self.fpu_enabled.setChecked(config.get('fpu', True))
+            # self.fpu_enabled.setChecked(config.get('fpu', True))
             self.jit_fpu.setChecked(config.get('jitfpu', True))
             self.jit_cache_size.setValue(config.get('jitcachesize', 8192))
             self.jit_lazy_flush.setChecked(config.get('jitlazyflush', True))
@@ -1779,10 +1861,14 @@ class CpuMemoryTab(QWidget):
         config['ramsize'] = self.ram_size.currentData()
         
         if self.emulator_type == 'basilisk':
-            cpu_map = {0: 2, 1: 3, 2: 4}
-            config['cpu'] = cpu_map.get(self.cpu_type.currentIndex(), 3)
+            idx = self.cpu_type.currentIndex()
+            if 0 <= idx < len(self.cpu_options):
+                cpu_val, fpu_val = self.cpu_options[idx][1]
+                config['cpu'] = cpu_val
+                config['fpu'] = fpu_val
+            
             config['modelid'] = self.model_id.currentData()
-            config['fpu'] = self.fpu_enabled.isChecked()
+            # config['fpu'] = self.fpu_enabled.isChecked()
             config['jitfpu'] = self.jit_fpu.isChecked()
             config['jitcachesize'] = self.jit_cache_size.value()
             config['jitlazyflush'] = self.jit_lazy_flush.isChecked()
@@ -2541,11 +2627,11 @@ class EmulatorTab(QWidget):
                 qproperty-iconSize: 24px 24px;
             }
             QTabBar::tab:selected {
-                background: palette(base);
+                background: transparent;
             }
             QTabBar::tab:!selected {
                 margin-top: 2px;
-                background: palette(window);
+                background: transparent;
             }
             QTabBar::tab:!selected:hover {
                 background: palette(light);

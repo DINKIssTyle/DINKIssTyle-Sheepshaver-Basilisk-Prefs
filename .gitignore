@@ -5,7 +5,6 @@
 .DS_Store
 /.venv
 note
-/macemu
 /snow
 __pycache__/
 *.pyc
