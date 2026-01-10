@@ -2820,9 +2820,26 @@ class SettingsTab(QWidget):
     
     def load_settings(self):
         self.basilisk_exe.setText(self.settings.value('basilisk/exe', ''))
-        self.basilisk_cfg.setText(self.settings.value('basilisk/cfg', ''))
+        
+        # Basilisk Config
+        b_cfg = self.settings.value('basilisk/cfg', '')
+        if not b_cfg:
+             # Try default
+             default_b = os.path.expanduser("~/.basilisk_ii_prefs")
+             if os.path.exists(default_b):
+                 b_cfg = default_b
+        self.basilisk_cfg.setText(b_cfg)
+
         self.sheepshaver_exe.setText(self.settings.value('sheepshaver/exe', ''))
-        self.sheepshaver_cfg.setText(self.settings.value('sheepshaver/cfg', ''))
+        
+        # SheepShaver Config
+        s_cfg = self.settings.value('sheepshaver/cfg', '')
+        if not s_cfg:
+             # Try default
+             default_s = os.path.expanduser("~/.sheepshaver_prefs")
+             if os.path.exists(default_s):
+                 s_cfg = default_s
+        self.sheepshaver_cfg.setText(s_cfg)
         
         # Load language setting
         current_lang = self.settings.value('language', 'en')

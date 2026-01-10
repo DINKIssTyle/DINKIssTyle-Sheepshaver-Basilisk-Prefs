@@ -127,7 +127,7 @@ REM Output: dist\EmulatorPrefs.exe
 
 ## License
 
-Copyright (C) 2025 DINKI'ssTyle. All rights reserved.
+Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
 
 ## Author
 
