@@ -90,8 +90,13 @@ TRANSLATIONS = {
         'disk_images': 'Disk Images',
         'disk_image': 'Disk Image',
         'disabled': 'Disabled',
+        'new_disk': 'New',
         'add': 'Add',
         'remove': 'Remove',
+        'create_disk_title': 'Create Disk Image',
+        'disk_size_mb': 'Size (MB):',
+        'disk_create_success': 'Disk image created successfully.',
+        'disk_create_error': 'Failed to create disk image.',
         'up': '▲ Up',
         'down': '▼ Down',
         'storage_options': 'Storage Options',
@@ -226,8 +231,13 @@ TRANSLATIONS = {
         'disk_images': '디스크 이미지',
         'disk_image': '디스크 이미지',
         'disabled': '비활성화',
+        'new_disk': '새로 만들기',
         'add': '추가',
         'remove': '제거',
+        'create_disk_title': '디스크 이미지 만들기',
+        'disk_size_mb': '용량 (MB):',
+        'disk_create_success': '디스크 이미지가 생성되었습니다.',
+        'disk_create_error': '디스크 이미지 생성에 실패했습니다.',
         'up': '▲ 위로',
         'down': '▼ 아래로',
         'storage_options': '저장소 옵션',
@@ -352,8 +362,13 @@ TRANSLATIONS = {
         'disk_images': '磁盘镜像',
         'disk_image': '磁盘镜像',
         'disabled': '已禁用',
+        'new_disk': '新建',
         'add': '添加',
         'remove': '删除',
+        'create_disk_title': '创建磁盘镜像',
+        'disk_size_mb': '大小 (MB):',
+        'disk_create_success': '磁盘镜像创建成功。',
+        'disk_create_error': '磁盘镜像创建失败。',
         'up': '▲ 上移',
         'down': '▼ 下移',
         'storage_options': '存储选项',
@@ -466,8 +481,13 @@ TRANSLATIONS = {
         'disk_images': 'ディスクイメージ',
         'disk_image': 'ディスクイメージ',
         'disabled': '無効',
+        'new_disk': '新規作成',
         'add': '追加',
         'remove': '削除',
+        'create_disk_title': 'ディスクイメージ作成',
+        'disk_size_mb': 'サイズ (MB):',
+        'disk_create_success': 'ディスクイメージが作成されました。',
+        'disk_create_error': 'ディスクイメージの作成に失敗しました。',
         'up': '▲ 上へ',
         'down': '▼ 下へ',
         'storage_options': 'ストレージオプション',
@@ -580,8 +600,13 @@ TRANSLATIONS = {
         'disk_images': 'Imágenes de Disco',
         'disk_image': 'Imagen de Disco',
         'disabled': 'Deshabilitado',
+        'new_disk': 'Nuevo',
         'add': 'Agregar',
         'remove': 'Eliminar',
+        'create_disk_title': 'Crear imagen de disco',
+        'disk_size_mb': 'Tamaño (MB):',
+        'disk_create_success': 'Imagen de disco creada exitosamente.',
+        'disk_create_error': 'Error al crear la imagen de disco.',
         'up': '▲ Arriba',
         'down': '▼ Abajo',
         'storage_options': 'Opciones de Almacenamiento',
@@ -926,6 +951,54 @@ class ShaderParamsDialog(QDialog):
         return result
 
 
+class CreateDiskDialog(QDialog):
+    """Dialog to create a new disk image file."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(tr('create_disk_title'))
+        self.setMinimumWidth(400)
+        self.file_path = None
+        self.size_mb = 100
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # Size input
+        size_layout = QHBoxLayout()
+        size_layout.addWidget(QLabel(tr('disk_size_mb')))
+        self.size_spin = QSpinBox()
+        self.size_spin.setRange(1, 4096)
+        self.size_spin.setValue(100)
+        self.size_spin.setSuffix(" MB")
+        size_layout.addWidget(self.size_spin)
+        size_layout.addStretch()
+        layout.addLayout(size_layout)
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept_and_save)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(ok_btn)
+        btn_layout.addWidget(cancel_btn)
+        layout.addLayout(btn_layout)
+    
+    def accept_and_save(self):
+        """Show file save dialog and create the disk image."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, tr('create_disk_title'),
+            "new_disk.img", "Disk Images (*.img *.hfv);;All Files (*)"
+        )
+        if path:
+            self.file_path = path
+            self.size_mb = self.size_spin.value()
+            self.accept()
+
+
 class DrivesTab(QWidget):
     """Disk and storage configuration."""
     
@@ -958,16 +1031,19 @@ class DrivesTab(QWidget):
         # self.disk_table.setMaximumHeight(100)
         
         btn_layout = QHBoxLayout()
+        self.btn_new = QPushButton(tr('new_disk'))
         self.btn_add = QPushButton(tr('add'))
         self.btn_remove = QPushButton(tr('remove'))
         self.btn_up = QPushButton(tr('up'))
         self.btn_down = QPushButton(tr('down'))
         
+        self.btn_new.clicked.connect(self.new_disk)
         self.btn_add.clicked.connect(self.add_disk)
         self.btn_remove.clicked.connect(self.remove_disk)
         self.btn_up.clicked.connect(self.move_up)
         self.btn_down.clicked.connect(self.move_down)
         
+        btn_layout.addWidget(self.btn_new)
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_remove)
         btn_layout.addWidget(self.btn_up)
@@ -1021,6 +1097,21 @@ class DrivesTab(QWidget):
         
         layout.addWidget(storage_group)
         layout.addStretch()
+    
+    def new_disk(self):
+        """Create a new disk image file."""
+        dialog = CreateDiskDialog(self)
+        if dialog.exec_() == QDialog.Accepted and dialog.file_path:
+            try:
+                # Create empty file with specified size
+                size_bytes = dialog.size_mb * 1024 * 1024
+                with open(dialog.file_path, 'wb') as f:
+                    f.truncate(size_bytes)
+                # Add to disk list
+                self._add_disk_row(dialog.file_path, False)
+                QMessageBox.information(self, tr('disk_image'), tr('disk_create_success'))
+            except Exception as e:
+                QMessageBox.critical(self, tr('error'), f"{tr('disk_create_error')}\n{str(e)}")
     
     def add_disk(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -3203,6 +3294,8 @@ class PrefsEditor(QMainWindow):
             if b_path:
                 b_cfg = self.basilisk_tab.save_config()
                 ConfigParser.save(b_path, b_cfg)
+                # Reload to update left panel title
+                self.basilisk_tab.load_config(b_cfg)
                 QMessageBox.information(self, tr('basilisk_tab'), tr('config_saved'))
                 
         elif idx == 1:
@@ -3211,6 +3304,8 @@ class PrefsEditor(QMainWindow):
             if s_path:
                 s_cfg = self.sheepshaver_tab.save_config()
                 ConfigParser.save(s_path, s_cfg)
+                # Reload to update left panel title
+                self.sheepshaver_tab.load_config(s_cfg)
                 QMessageBox.information(self, tr('sheepshaver_tab'), tr('config_saved'))
         
         else:
