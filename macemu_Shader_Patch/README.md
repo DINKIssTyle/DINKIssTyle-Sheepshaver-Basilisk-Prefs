@@ -2,9 +2,7 @@
 
 ![screenshot](screenshot.png)
 
-**[한국어 설명은 아래에 있습니다 (Korean description is below)](#macemu-쉐이더-패치-korean)**
-
-Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
+**[한국어 설명은 아래에 있습니다](#macemu-쉐이더-패치-korean)**
 
 This patch adds GLSL shader support to the macemu (Basilisk II, SheepShaver) emulators.
 
@@ -266,3 +264,6 @@ sudo apt install build-essential autoconf automake \
 - **2026-01-10**: 초기 패치 시스템 구축
   - 쉐이더 렌더링 지원 추가
   - prefs.cpp 버퍼 크기 4096으로 증가 (긴 shader_params 지원)
+
+
+Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
