@@ -1,4 +1,142 @@
-# macemu 쉐이더 패치
+# macemu Shader Patch
+
+**[한국어 설명은 아래에 있습니다 (Korean description is below)](#macemu-쉐이더-패치-korean)**
+
+Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
+
+This patch adds GLSL shader support to the macemu (Basilisk II, SheepShaver) emulators.
+
+---
+
+## 📋 Patch Contents
+
+### Added Features
+- **GLSL Shader Rendering** - Apply various effects like CRT, scanlines, etc.
+- **Shader Parameter Adjustment** - Real-time adjustment of brightness, contrast, gamma, etc.
+- **Hotkey Reload** - Immediate application after settings change (Default: F6)
+
+### Added Configuration Items
+| Setting | Type | Description |
+|-----|-----|-----|
+| `shader` | STRING | GLSL shader file path |
+| `shader_params` | STRING | Shader parameters (key=value,...) |
+| `key_shader_toggle` | STRING | Shader reload hotkey (e.g., F6) |
+
+---
+
+## 📁 Folder Structure
+
+```
+macemu-patch/
+├── apply_shader_patch.sh    # Patch application script (English)
+├── apply_shader_patch_ko.sh # Patch application script (Korean)
+├── README.md                # This file
+├── macemu/                  # Original macemu source (Target)
+│   ├── BasiliskII/
+│   │   └── build.sh         # BasiliskII build script
+│   └── SheepShaver/
+│       └── build.sh         # SheepShaver build script
+└── patches/                 # Patch files
+    ├── basilisk_*.patch     # Patches for BasiliskII
+    └── sheepshaver_*.patch  # Patches for SheepShaver
+```
+
+---
+
+## 🚀 Usage
+
+### 1. Apply Patch
+
+```bash
+cd /home/dinki/Desktop/macemu-patch
+./apply_shader_patch.sh
+```
+
+To patch macemu in a different location:
+```bash
+./apply_shader_patch.sh /path/to/your/macemu
+```
+
+The patch script automatically performs the following:
+- Applies patches to shader-related source files
+- Modifies `prefs.cpp` buffer size (256 → 4096) to support long `shader_params`
+- Generates build scripts: `BasiliskII/build.sh`, `SheepShaver/build.sh`
+
+### 2. Build
+
+**BasiliskII:**
+```bash
+./macemu/BasiliskII/build.sh
+```
+
+**SheepShaver:**
+```bash
+./macemu/SheepShaver/build.sh
+```
+
+### 3. Shader Configuration
+
+Add to your `~/.basilisk_ii_prefs` or `~/.sheepshaver_prefs` file:
+
+```
+shader /path/to/shader.glsl
+shader_params brightness=1.2,contrast=1.1
+key_shader_toggle F6
+```
+
+---
+
+## 📦 Patch File List
+
+### BasiliskII
+| File | Description |
+|-----|-----|
+| `basilisk_prefs_items.patch` | Adds shader configuration items |
+| `basilisk_configure.patch` | Build configuration (video_shader.cpp, -lGL) |
+| `basilisk_video_sdl2.patch` | Shader rendering integration |
+| `basilisk_video_shader_cpp.patch` | Shader system implementation (New) |
+| `basilisk_video_shader_h.patch` | Shader header (New) |
+| `basilisk_prefs_buffer.patch` | Increases prefs.cpp buffer (256→4096) |
+
+### SheepShaver
+| File | Description |
+|-----|-----|
+| `sheepshaver_prefs_items.patch` | Adds shader configuration items |
+| `sheepshaver_configure.patch` | Build configuration (video_shader.cpp, -lGL) |
+| `sheepshaver_video_sdl2.patch` | Shader rendering integration |
+| `sheepshaver_video_shader_cpp.patch` | Shader system implementation (New) |
+| `sheepshaver_video_shader_h.patch` | Shader header (New) |
+
+---
+
+## ⚠️ Prerequisites
+
+- **OpenGL Required**: Shader functions require OpenGL.
+- **SDL2 Required**: SDL2 video driver is required.
+- **Build Dependencies**: `libgl1-mesa-dev`, `libsdl2-dev`, `libgtk-3-dev`, etc.
+
+### Install Dependencies (Ubuntu/Debian)
+```bash
+sudo apt install build-essential autoconf automake \
+  libsdl2-dev libgtk-3-dev libgl1-mesa-dev
+```
+
+---
+
+## 📝 Changelog
+
+- **2026-01-10**: Initial patch system established
+  - Added shader rendering support
+  - Increased prefs.cpp buffer size to 4096 (Support for long shader_params)
+
+<br>
+<br>
+<br>
+
+---
+---
+
+# macemu 쉐이더 패치 (Korean)
 
 Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
 
@@ -26,7 +164,8 @@ macemu(Basilisk II, SheepShaver) 에뮬레이터에 GLSL 쉐이더 지원을 추
 
 ```
 macemu-patch/
-├── apply_shader_patch.sh    # 패치 적용 스크립트
+├── apply_shader_patch.sh    # 패치 적용 스크립트 (영어)
+├── apply_shader_patch_ko.sh # 패치 적용 스크립트 (한국어)
 ├── README.md                # 이 파일
 ├── macemu/                  # 오리지널 macemu (패치 대상)
 │   ├── BasiliskII/
@@ -58,6 +197,8 @@ cd /home/dinki/Desktop/macemu-patch
 - 쉐이더 관련 소스 파일 패치 적용
 - `prefs.cpp` 버퍼 크기 수정 (256 → 4096, 긴 shader_params 지원)
 - `BasiliskII/build.sh`, `SheepShaver/build.sh` 빌드 스크립트 생성
+
+### 2. 빌드
 
 **BasiliskII:**
 ```bash
