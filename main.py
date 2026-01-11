@@ -1095,18 +1095,22 @@ class DrivesTab(QWidget):
         self.btn_up = QPushButton(tr('up'))
         self.btn_down = QPushButton(tr('down'))
         
+        
         self.btn_new.clicked.connect(self.new_disk)
         self.btn_add.clicked.connect(self.add_disk)
         self.btn_remove.clicked.connect(self.remove_disk)
         self.btn_up.clicked.connect(self.move_up)
         self.btn_down.clicked.connect(self.move_down)
         
+        # Double click to replace
+        self.disk_table.cellDoubleClicked.connect(self.on_disk_double_clicked)
+        
         btn_layout.addWidget(self.btn_new)
+        btn_layout.addStretch()
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_remove)
         btn_layout.addWidget(self.btn_up)
         btn_layout.addWidget(self.btn_down)
-        btn_layout.addStretch()
         disk_layout.addLayout(btn_layout)
         
         layout.addWidget(disk_group)
@@ -1179,6 +1183,23 @@ class DrivesTab(QWidget):
         )
         if path:
             self._add_disk_row(path, 0, False)
+
+    def on_disk_double_clicked(self, row, column):
+        """Handle double click on disk list."""
+        if column == 0: # Path column
+            item = self.disk_table.item(row, column)
+            current_path = item.text()
+            directory = os.path.dirname(current_path) if current_path and os.path.exists(current_path) else ""
+            
+            path, _ = QFileDialog.getOpenFileName(
+                self, "Select Disk Image",
+                directory, "Disk Images (*.img *.dmg *.iso *.hfv *.toast);;All Files (*)"
+            )
+            
+            if path:
+                item.setText(path)
+                item.setToolTip(path)
+
             
     def _add_disk_row(self, path, disk_type, disabled):
         row = self.disk_table.rowCount()

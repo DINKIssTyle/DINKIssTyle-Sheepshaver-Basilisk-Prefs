@@ -1,0 +1,21 @@
+--- $MACEMU_BASE/BasiliskII/src/include/clip.h	2026-01-11 23:39:22.911583404 +0900
++++ $MACEMU_BASE/BasiliskII/src/include/clip.h	2026-01-11 21:39:38.958920274 +0900
+@@ -21,6 +21,8 @@
+ #ifndef CLIP_H
+ #define CLIP_H
+ 
++#include "sysdeps.h"
++
+ extern void ClipInit(void);
+ extern void ClipExit(void);
+ 
+@@ -28,4 +30,9 @@
+ extern void PutScrap(uint32 type, void *scrap, int32 length);
+ extern void GetScrap(void **handle, uint32 type, int32 offset);
+ 
++extern bool ClipboardCheck(void);
++extern int32 ClipboardGetSize(uint32 type);
++extern int32 ClipboardGetData(uint32 type, void *buffer, int32 size);
++extern void ClipboardPutData(uint32 type, void *data, int32 size);
++
+ #endif

@@ -13,3 +13,5 @@ uv.lock
 .python-version
 .basilisk_ii_prefs
 .sheepshaver_prefs
+/Metrowerks CodeWarrior
+macemu_patches/Old
