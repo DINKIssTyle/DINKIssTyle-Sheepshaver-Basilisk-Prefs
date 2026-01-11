@@ -4,7 +4,6 @@ A cross-platform GUI application for editing Sheepshaver and Basilisk II emulato
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![Qt](https://img.shields.io/badge/Qt-QtPy-green)
-![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)
 
 ## Features
 
