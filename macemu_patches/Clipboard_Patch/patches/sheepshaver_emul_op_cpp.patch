@@ -990,18 +990,221 @@
 +    uint32 ptr = r->a[0];
 +    printf("[CLIP_DEBUG] OP_CLIP_PUT_DATA called, ptr=0x%08x\n", ptr);
 +    uint32 type = ReadMacInt32(ptr);
-+    uint32 dataPtr = ReadMacInt32(ptr + 4);
-+    int32 size = ReadMacInt32(ptr + 8);
-+    if (dataPtr) {
-+      ClipboardPutData(type, Mac2HostAddr(dataPtr), size);
-+    }
-+    r->d[0] = 0; // noErr
-+    break;
-+  }
-+
-+  default:
-+    printf("FATAL: EMUL_OP called with bogus selector %08x\n", selector);
-+    QuitEmulator();
-+    break;
-+  }
- }
+    uint16 sel = ReadMacInt16(r->a[7] + 4);
+    r->a[7] += 6;
+    //			D(bug("SCSIDispatch(%d)\n", sel));
+    int stack;
+    switch (sel) {
+    case 0: // SCSIReset
+      WriteMacInt16(r->a[7], SCSIReset());
+      stack = 0;
+      break;
+    case 1: // SCSIGet
+      WriteMacInt16(r->a[7], SCSIGet());
+      stack = 0;
+      break;
+    case 2:  // SCSISelect
+    case 11: // SCSISelAtn
+      WriteMacInt16(r->a[7] + 2, SCSISelect(ReadMacInt8(r->a[7] + 1)));
+      stack = 2;
+      break;
+    case 3: // SCSICmd
+      WriteMacInt16(r->a[7] + 6,
+                    SCSICmd(ReadMacInt16(r->a[7]),
+                            Mac2HostAddr(ReadMacInt32(r->a[7] + 2))));
+      stack = 6;
+      break;
+    case 4: // SCSIComplete
+      WriteMacInt16(r->a[7] + 12, SCSIComplete(ReadMacInt32(r->a[7]),
+                                               ReadMacInt32(r->a[7] + 4),
+                                               ReadMacInt32(r->a[7] + 8)));
+      stack = 12;
+      break;
+    case 5: // SCSIRead
+    case 8: // SCSIRBlind
+      WriteMacInt16(r->a[7] + 4, SCSIRead(ReadMacInt32(r->a[7])));
+      stack = 4;
+      break;
+    case 6: // SCSIWrite
+    case 9: // SCSIWBlind
+      WriteMacInt16(r->a[7] + 4, SCSIWrite(ReadMacInt32(r->a[7])));
+      stack = 4;
+      break;
+    case 10: // SCSIStat
+      WriteMacInt16(r->a[7], SCSIStat());
+      stack = 0;
+      break;
+    case 12: // SCSIMsgIn
+      WriteMacInt16(r->a[7] + 4, 0);
+      stack = 4;
+      break;
+    case 13: // SCSIMsgOut
+      WriteMacInt16(r->a[7] + 2, 0);
+      stack = 2;
+      break;
+    case 14: // SCSIMgrBusy
+      WriteMacInt16(r->a[7], SCSIMgrBusy());
+      stack = 0;
+      break;
+    default:
+      printf("FATAL: SCSIDispatch: illegal selector\n");
+      stack = 0;
+      //!! SysError(12)
+    }
+    r->a[0] = ret;
+    r->a[7] += stack;
+    break;
+  }
+
+  case OP_SCSI_ATOMIC: // SCSIAtomic() replacement
+    D(bug("SCSIAtomic\n"));
+    r->d[0] = (uint32)-7887;
+    break;
+
+  case OP_CHECK_SYSV: { // Check we are not using MacOS < 8.1 with a NewWorld
+                        // ROM
+    r->a[1] = r->d[1];
+    r->a[0] = ReadMacInt32(r->d[1]);
+    uint32 sysv = ReadMacInt16(r->a[0]);
+    D(bug("Detected MacOS version %d.%d.%d\n", (sysv >> 8) & 0xf,
+          (sysv >> 4) & 0xf, sysv & 0xf));
+    if (ROMType == ROMTYPE_NEWWORLD && sysv < 0x0801)
+      r->d[1] = 0;
+    break;
+  }
+
+  case OP_NTRB_17_PATCH:
+    r->a[2] = ReadMacInt32(r->a[7]);
+    r->a[7] += 4;
+    if (ReadMacInt16(r->a[2] + 6) == 17)
+      PatchNativeResourceManager();
+    break;
+
+  case OP_NTRB_17_PATCH2:
+    r->a[7] += 8;
+    PatchNativeResourceManager();
+    break;
+
+  case OP_NTRB_17_PATCH3:
+    r->a[2] = ReadMacInt32(r->a[7]);
+    r->a[7] += 4;
+    D(bug("%d %d\n", ReadMacInt16(r->a[2]), ReadMacInt16(r->a[2] + 6)));
+    if (ReadMacInt16(r->a[2]) == 11 && ReadMacInt16(r->a[2] + 6) == 17)
+      PatchNativeResourceManager();
+    break;
+
+  case OP_NTRB_17_PATCH4:
+    r->d[0] = ReadMacInt16(r->a[7]);
+    r->a[7] += 2;
+    D(bug("%d %d\n", ReadMacInt16(r->a[2]), ReadMacInt16(r->a[2] + 6)));
+    if (ReadMacInt16(r->a[2]) == 11 && ReadMacInt16(r->a[2] + 6) == 17)
+      PatchNativeResourceManager();
+    break;
+
+  case OP_CHECKLOAD: { // vCheckLoad() patch
+    uint32 type = ReadMacInt32(r->a[7]);
+    r->a[7] += 4;
+    int16 id = ReadMacInt16(r->a[2]);
+    if (r->a[0] == 0)
+      break;
+    uint32 adr = ReadMacInt32(r->a[0]);
+    if (adr == 0)
+      break;
+    uint16 *p = (uint16 *)Mac2HostAddr(adr);
+    uint32 size = ReadMacInt32(adr - 8) & 0xffffff;
+    CheckLoad(type, id, p, size);
+    break;
+  }
+
+  case OP_EXTFS_COMM: // External file system routines
+    WriteMacInt16(r->a[7] + 14, ExtFSComm(ReadMacInt16(r->a[7] + 12),
+                                          ReadMacInt32(r->a[7] + 8),
+                                          ReadMacInt32(r->a[7] + 4)));
+    break;
+
+  case OP_EXTFS_HFS:
+    WriteMacInt16(r->a[7] + 20, ExtFSHFS(ReadMacInt32(r->a[7] + 16),
+                                         ReadMacInt16(r->a[7] + 14),
+                                         ReadMacInt32(r->a[7] + 10),
+                                         ReadMacInt32(r->a[7] + 6),
+                                         ReadMacInt16(r->a[7] + 4)));
+    break;
+
+  case OP_IDLE_TIME:
+    // Sleep if no events pending
+    if (ReadMacInt32(0x14c) == 0)
+      idle_wait();
+    r->a[0] = ReadMacInt32(0x2b6);
+    break;
+
+  case OP_IDLE_TIME_2:
+    // Sleep if no events pending
+    if (ReadMacInt32(0x14c) == 0)
+      idle_wait();
+    r->d[0] = (uint32)-2;
+    break;
+
+  case OP_CLIP_CHECK:
+    // 68k: param unused, return bool in D0
+    printf("[CLIP_DEBUG] OP_CLIP_CHECK called\n");
+    r->d[0] = ClipboardCheck() ? 1 : 0;
+    break;
+
+  case OP_CLIP_GET_SIZE: {
+    // 68k: A0 = pointer to struct { OSType type; long size; }
+    // Return noErr in D0, size written to struct
+    uint32 ptr = r->a[0];
+    printf("[CLIP_DEBUG] OP_CLIP_GET_SIZE called, ptr=0x%08x\n", ptr);
+    uint32 type = ReadMacInt32(ptr);
+    printf("[CLIP_DEBUG]   type=0x%08x ('%c%c%c%c')\n", type,
+           (type >> 24) & 0xFF, (type >> 16) & 0xFF, (type >> 8) & 0xFF,
+           type & 0xFF);
+    int32 size = ClipboardGetSize(type);
+    printf("[CLIP_DEBUG]   size=%d\n", size);
+    WriteMacInt32(ptr + 4, size);
+    r->d[0] = 0; // noErr
+    break;
+  }
+
+  case OP_CLIP_GET_DATA: {
+    // 68k: A0 = pointer to struct { OSType type; Ptr buffer; long size; }
+    uint32 ptr = r->a[0];
+    printf("[CLIP_DEBUG] OP_CLIP_GET_DATA called, ptr=0x%08x\n", ptr);
+    uint32 type = ReadMacInt32(ptr);
+    uint32 bufPtr = ReadMacInt32(ptr + 4);
+    int32 reqSize = ReadMacInt32(ptr + 8);
+    if (bufPtr) {
+      ClipboardGetData(type, Mac2HostAddr(bufPtr), reqSize);
+    }
+    r->d[0] = 0; // noErr
+    break;
+  }
+
+  case OP_CLIP_PUT_DATA: {
+    // 68k: A0 = pointer to struct { OSType type; Ptr data; long size; }
+    uint32 ptr = r->a[0];
+    printf("[CLIP_DEBUG] OP_CLIP_PUT_DATA called, ptr=0x%08x\n", ptr);
+    uint32 type = ReadMacInt32(ptr);
+    uint32 dataPtr = ReadMacInt32(ptr + 4);
+    int32 size = ReadMacInt32(ptr + 8);
+    if (dataPtr) {
+      ClipboardPutData(type, Mac2HostAddr(dataPtr), size);
+    }
+     r->d[0] = 0; // noErr
+    break;
+  }
+
+  case OP_CLIP_GET_IMG_SIZE:
+    r->d[0] = ClipboardGetImageSize();
+    break;
+
+  case OP_CLIP_GET_IMG_DATA:
+    r->d[0] = ClipboardGetImageData(Mac2HostAddr(r->a[0]), r->d[0]);
+    break;
+
+  default:
+    printf("FATAL: EMUL_OP called with bogus selector %08x\n", selector);
+    QuitEmulator();
+    break;
+  }
+}

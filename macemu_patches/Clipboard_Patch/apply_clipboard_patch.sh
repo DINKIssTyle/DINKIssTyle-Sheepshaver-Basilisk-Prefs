@@ -89,6 +89,20 @@ apply_basilisk_patches() {
     # Apply clip.h patch
     apply_patch "${PATCHES_DIR}/basilisk_clip_h.patch"
     
+    # Apply emul_op.h and emul_op.cpp patches for BasiliskII
+    apply_patch "${PATCHES_DIR}/basilisk_emul_op_h.patch"
+    apply_patch "${PATCHES_DIR}/basilisk_emul_op_cpp.patch"
+    
+    # Manual check for clip.h (in case patch failed due to fuzz)
+    local CLIP_H="${MACEMU_DIR}/BasiliskII/src/include/clip.h"
+    if [ -f "$CLIP_H" ]; then
+        if ! grep -q "ClipboardGetImageSize" "$CLIP_H"; then
+             print_warning "  Patching clip.h manually for Image support..."
+             sed -i '/extern void ClipboardPutData/a extern int32 ClipboardGetImageSize(void);\nextern int32 ClipboardGetImageData(void *buffer, int32 size);' "$CLIP_H"
+        fi
+    fi
+     
+    
     # Copy new file: clip_sdl.cpp
     if [ -f "${PATCHES_DIR}/clip_sdl.cpp" ]; then
         mkdir -p "${MACEMU_DIR}/BasiliskII/src/SDL"
@@ -110,6 +124,14 @@ apply_basilisk_patches() {
         fi
     else
         print_warning "  BasiliskII Makefile not found. Run ./configure first."
+    fi
+
+    # Patch LIBS to include X11 and png
+    if [ -f "$B2_MAKEFILE" ]; then
+        if ! grep -q "\-lpng" "$B2_MAKEFILE"; then
+            sed -i 's|^LIBS =.*|& -lX11 -lpng|' "$B2_MAKEFILE"
+            print_success "  Added -lX11 -lpng to LIBS"
+        fi
     fi
     
     print_success "BasiliskII patches complete!"
@@ -149,6 +171,14 @@ apply_sheepshaver_patches() {
         fi
     else
         print_warning "  SheepShaver Makefile not found. Run ./configure first."
+    fi
+
+    # Patch LIBS to include X11 and png
+    if [ -f "$SS_MAKEFILE" ]; then
+        if ! grep -q "\-lpng" "$SS_MAKEFILE"; then
+            sed -i 's|^LIBS =.*|& -lX11 -lpng|' "$SS_MAKEFILE"
+            print_success "  Added -lX11 -lpng to LIBS"
+        fi
     fi
     
     print_success "SheepShaver patches complete!"

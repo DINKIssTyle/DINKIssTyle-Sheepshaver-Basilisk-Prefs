@@ -17,5 +17,7 @@
 +extern int32 ClipboardGetSize(uint32 type);
 +extern int32 ClipboardGetData(uint32 type, void *buffer, int32 size);
 +extern void ClipboardPutData(uint32 type, void *data, int32 size);
++extern int32 ClipboardGetImageSize(void);
++extern int32 ClipboardGetImageData(void *buffer, int32 size);
 +
  #endif

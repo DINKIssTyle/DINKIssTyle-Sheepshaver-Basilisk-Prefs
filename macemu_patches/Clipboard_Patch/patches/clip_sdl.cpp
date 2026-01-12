@@ -17,6 +17,13 @@
 #include <cstring>
 #include <errno.h>
 #include <iconv.h>
+#include <unistd.h>
+#include <vector>
+
+// X11 and PNG Headers
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <png.h>
 
 #include "clip.h"
 #include "cpu_emulation.h"
@@ -36,6 +43,10 @@ static bool we_put_this_data = false;
 
 // Cache for ClipboardCheck
 static char *last_clipboard_text = NULL;
+
+// Cache for Image Data (ARGB format)
+static void *last_img_data = NULL;
+static int32 last_img_size = 0;
 
 // Encoding setting (from name_encoding pref)
 static int name_encoding = 0;
@@ -101,6 +112,201 @@ static char *convert_encoding(const char *input, size_t input_len,
 }
 
 /*
+ * X11 / PNG Helper Functions
+ */
+
+struct PngReadData {
+  const unsigned char *buffer;
+  size_t size;
+  size_t offset;
+};
+
+static void png_mem_read(png_structp png_ptr, png_bytep data,
+                         png_size_t length) {
+  PngReadData *p = (PngReadData *)png_get_io_ptr(png_ptr);
+  if (p->offset + length > p->size) {
+    png_error(png_ptr, "Read Error");
+  }
+  memcpy(data, p->buffer + p->offset, length);
+  p->offset += length;
+}
+
+static bool FetchHostImage(void) {
+  // 1. Open X11 Display
+  Display *display = XOpenDisplay(NULL);
+  if (!display) {
+    printf("[CLIP] Failed to open X display\n");
+    return false;
+  }
+
+  Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
+                                      1, 1, 0, 0, 0);
+  Atom clipboard_atom = XInternAtom(display, "CLIPBOARD", False);
+  Atom image_png_atom = XInternAtom(display, "image/png", False);
+
+  // 2. Request image/png
+  XConvertSelection(display, clipboard_atom, image_png_atom, image_png_atom,
+                    window, CurrentTime);
+  XFlush(display);
+
+  // 3. Wait for SelectionNotify
+  bool done = false;
+  bool success = false;
+  std::vector<unsigned char> png_data;
+  XEvent event;
+  int retries = 0;
+
+  while (!done && retries < 100) { // Timeout safety (approx 1 sec)
+    if (XCheckTypedEvent(display, SelectionNotify, &event)) {
+      if (event.xselection.selection == clipboard_atom) {
+        if (event.xselection.property != None) {
+          // Read property
+          Atom type;
+          int format;
+          unsigned long nitems, bytes_after;
+          unsigned char *prop;
+
+          int result = XGetWindowProperty(
+              display, window, event.xselection.property, 0, (~0L), False,
+              AnyPropertyType, &type, &format, &nitems, &bytes_after, &prop);
+
+          if (result == Success && prop) {
+            png_data.resize(nitems * (format / 8));
+            memcpy(png_data.data(), prop, png_data.size());
+            XFree(prop);
+            success = true;
+          }
+          XDeleteProperty(display, window, event.xselection.property);
+        }
+        done = true;
+      }
+    }
+    if (!done) {
+      usleep(10000); // 10ms wait
+      retries++;
+    }
+  }
+
+  XDestroyWindow(display, window);
+  XCloseDisplay(display);
+
+  if (!success || png_data.empty()) {
+    printf("[CLIP] No PNG data found on X clipboard\n");
+    return false;
+  }
+
+  // 4. Decode PNG using libpng
+  if (last_img_data) {
+    free(last_img_data);
+    last_img_data = NULL;
+    last_img_size = 0;
+  }
+
+  if (png_sig_cmp(png_data.data(), 0, 8))
+    return false;
+
+  png_structp png_ptr =
+      png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (!png_ptr)
+    return false;
+
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    png_destroy_read_struct(&png_ptr, NULL, NULL);
+    return false;
+  }
+
+  PngReadData read_data = {png_data.data(), png_data.size(), 0};
+  png_set_read_fn(png_ptr, &read_data, png_mem_read);
+
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    return false;
+  }
+
+  png_read_info(png_ptr, info_ptr);
+
+  int width = png_get_image_width(png_ptr, info_ptr);
+  int height = png_get_image_height(png_ptr, info_ptr);
+  png_byte color_type = png_get_color_type(png_ptr, info_ptr);
+  png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+
+  // Transform to 8-bit RGB/RGBA
+  if (bit_depth == 16)
+    png_set_strip_16(png_ptr);
+  if (color_type == PNG_COLOR_TYPE_PALETTE)
+    png_set_palette_to_rgb(png_ptr);
+  if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+    png_set_expand_gray_1_2_4_to_8(png_ptr);
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+    png_set_tRNS_to_alpha(png_ptr);
+
+  // Ensure 32-bit ARGB
+  if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY ||
+      color_type == PNG_COLOR_TYPE_PALETTE)
+    png_set_filler(png_ptr, 0xFF, PNG_FILLER_AFTER);
+
+  if (color_type == PNG_COLOR_TYPE_GRAY ||
+      color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+    png_set_gray_to_rgb(png_ptr);
+
+  png_read_update_info(png_ptr, info_ptr);
+
+  // Read rows
+  int rowbytes = png_get_rowbytes(png_ptr, info_ptr);
+  // Header size + Data size
+  last_img_size = 16 + (height * rowbytes); // 16 bytes header
+
+  printf("[CLIP] Dimensions: %dx%d, RowBytes: %d, CalcSize: %d\n", width,
+         height, rowbytes, last_img_size);
+
+  // Safety check: Limit to 50MB
+  if (last_img_size > 50 * 1024 * 1024) {
+    printf("[CLIP] Image too large (%d bytes). Ignoring.\n", last_img_size);
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    return false;
+  }
+
+  last_img_data = malloc(last_img_size);
+  unsigned char *pHeaders = (unsigned char *)last_img_data;
+
+  // Write header (Big Endian for Mac)
+  // Width
+  pHeaders[0] = (width >> 24) & 0xFF;
+  pHeaders[1] = (width >> 16) & 0xFF;
+  pHeaders[2] = (width >> 8) & 0xFF;
+  pHeaders[3] = width & 0xFF;
+  // Height
+  pHeaders[4] = (height >> 24) & 0xFF;
+  pHeaders[5] = (height >> 16) & 0xFF;
+  pHeaders[6] = (height >> 8) & 0xFF;
+  pHeaders[7] = height & 0xFF;
+  // RowBytes
+  pHeaders[8] = (rowbytes >> 24) & 0xFF;
+  pHeaders[9] = (rowbytes >> 16) & 0xFF;
+  pHeaders[10] = (rowbytes >> 8) & 0xFF;
+  pHeaders[11] = rowbytes & 0xFF;
+  // Depth (32)
+  pHeaders[12] = 0;
+  pHeaders[13] = 0;
+  pHeaders[14] = 0;
+  pHeaders[15] = 32;
+
+  png_bytep *row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * height);
+  for (int y = 0; y < height; y++) {
+    row_pointers[y] = (png_bytep)last_img_data + 16 + (y * rowbytes);
+  }
+
+  png_read_image(png_ptr, row_pointers);
+  png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+  free(row_pointers);
+
+  printf("[CLIP] Processed PNG: %dx%d, rowbytes=%d, total=%d\n", width, height,
+         rowbytes, last_img_size);
+  return true;
+}
+
+/*
  *  Initialization
  */
 
@@ -127,10 +333,6 @@ void ZeroScrap() {
 
 /*
  *  Mac application reads clipboard (from host to guest)
- *  In SheepShaver, this is called but we cannot easily inject data
- *  into the Mac clipboard without 68k traps.
- *
- *  Current limitation: Host->Mac clipboard not implemented for SheepShaver.
  */
 
 void GetScrap(void **handle, uint32 type, int32 offset) {
@@ -230,11 +432,6 @@ void GetScrap(void **handle, uint32 type, int32 offset) {
   D(bug("GetScrap: Copied %d bytes from host to Mac clipboard\n", data_len));
 }
 
-/*
- *  Mac application wrote to clipboard (from guest to host)
- *  This works in SheepShaver - we receive the data directly.
- */
-
 void PutScrap(uint32 type, void *scrap, int32 length) {
   D(bug("PutScrap type %08x, data %p, length %d\n", type, scrap, length));
 
@@ -287,20 +484,15 @@ void PutScrap(uint32 type, void *scrap, int32 length) {
   free(temp);
 }
 
-/*
- *  Stubs for X11 selection events (not used in SDL mode)
- */
-
 void ClipboardSelectionClear(void *xev) {}
-
 void ClipboardSelectionRequest(void *req) {}
 
 /*
  *  SheepShaver NativeOp Clipboard Implementation
  */
 
-// Check if host clipboard content has changed
 bool ClipboardCheck(void) {
+  // Check TEXT
   if (!SDL_HasClipboardText()) {
     if (last_clipboard_text) {
       printf("[DEBUG] ClipboardCheck: Host clipboard empty, but had content. "
@@ -309,6 +501,12 @@ bool ClipboardCheck(void) {
       last_clipboard_text = NULL;
       return true;
     }
+    // Also check IMAGE here?
+    // Ideally we should monitor clipboard ownership or sequence number.
+    // For now, let's keep TEXT priority.
+    // If we want to detect Image changes, we'd need to poll X11 or use Fixes
+    // ext. Polling X11 is expensive. Let's assume user triggers copy manually
+    // for now.
     return false;
   }
 
@@ -319,7 +517,6 @@ bool ClipboardCheck(void) {
   bool changed = false;
   if (last_clipboard_text == NULL || strcmp(text, last_clipboard_text) != 0) {
     printf("[DEBUG] ClipboardCheck: Host clipboard changed.\n");
-    printf("[DEBUG] New content: '%s'\n", text);
     if (last_clipboard_text)
       free(last_clipboard_text);
     last_clipboard_text = strdup(text);
@@ -330,7 +527,6 @@ bool ClipboardCheck(void) {
   return changed;
 }
 
-// Get host clipboard data size
 int32 ClipboardGetSize(uint32 type) {
   printf("[DEBUG] ClipboardGetSize: Requesting type '%c%c%c%c'\n",
          (type >> 24) & 0xff, (type >> 16) & 0xff, (type >> 8) & 0xff,
@@ -361,10 +557,9 @@ int32 ClipboardGetSize(uint32 type) {
       }
     }
   }
-  return 0; // PICT not supported yet
+  return 0;
 }
 
-// Get host clipboard data
 int32 ClipboardGetData(uint32 type, void *buffer, int32 size) {
   printf("[DEBUG] ClipboardGetData: Requesting type '%c%c%c%c', size %d\n",
          (type >> 24) & 0xff, (type >> 16) & 0xff, (type >> 8) & 0xff,
@@ -415,8 +610,28 @@ int32 ClipboardGetData(uint32 type, void *buffer, int32 size) {
   return 0;
 }
 
-// Put data to host clipboard
 void ClipboardPutData(uint32 type, void *data, int32 size) {
   // Reuse PutScrap logic
   PutScrap(type, data, size);
+}
+
+/*
+ *  IMAGE CLIPBOARD
+ */
+
+int32 ClipboardGetImageSize(void) {
+  if (FetchHostImage()) {
+    return last_img_size;
+  }
+  return 0;
+}
+
+int32 ClipboardGetImageData(void *buffer, int32 size) {
+  if (last_img_data && size >= last_img_size) {
+    memcpy(buffer, last_img_data, last_img_size);
+    // We can keep the cache valid for multiple reads or clear it if triggered
+    // by new copy
+    return last_img_size;
+  }
+  return 0;
 }

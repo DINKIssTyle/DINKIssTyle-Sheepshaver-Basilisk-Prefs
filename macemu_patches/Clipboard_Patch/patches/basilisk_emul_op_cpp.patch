@@ -1,0 +1,20 @@
+--- $MACEMU_BASE/BasiliskII/src/emul_op.cpp.orig	2026-01-12 00:00:00.000000000 +0900
++++ $MACEMU_BASE/BasiliskII/src/emul_op.cpp	2026-01-12 00:00:00.000000000 +0900
+@@ -563,6 +563,18 @@
+ 			break;
+ #endif
++		case M68K_EMUL_OP_CLIP_GET_IMG_SIZE:
++			r->d[0] = ClipboardGetImageSize();
++			break;
++
++		case M68K_EMUL_OP_CLIP_GET_IMG_DATA:
++			r->d[0] = ClipboardGetImageData(Mac2HostAddr(r->a[0]), r->d[0]);
++			break;
++
++		case M68K_EMUL_OP_CLIP_PUT_IMG:
++			ClipboardPutData(FOURCC('P','I','C','T'), Mac2HostAddr(r->a[0]), r->d[0]);
++			break;
++
+ 		case M68K_EMUL_OP_BLOCK_MOVE:		// BlockMove() cache flushing
+ 			FlushCodeCache(Mac2HostAddr(r->a[0]), r->a[1]);
+ 			break;
