@@ -20,6 +20,7 @@
 
 #include "clip.h"
 #include "cpu_emulation.h"
+#include "emul_op.h"
 #include "macos_util.h"
 #include "main.h"
 #include "prefs.h"
@@ -126,18 +127,14 @@ void ZeroScrap() {
 
 /*
  *  Mac application reads clipboard (from host to guest)
- *  In SheepShaver, this is called but we cannot easily inject data
- *  into the Mac clipboard without 68k traps.
- *
- *  Current limitation: Host->Mac clipboard not implemented for SheepShaver.
+ *  IMPLEMENTATION DISABLED BY USER REQUEST
+ *  This prevents instability caused by recursive trap execution.
+ *  Host -> Mac sync should use ClipboardDaemon via OP_CLIP_* opcodes.
  */
 
 void GetScrap(void **handle, uint32 type, int32 offset) {
-  D(bug("GetScrap handle %p, type %08x, offset %d\n", handle, type, offset));
-
-  // SheepShaver limitation: Cannot inject data into Mac clipboard
-  // without PowerPC-native memory allocation calls
-  // TODO: Implement using SheepShaver's thunk mechanism
+  D(bug("GetScrap: Host->Mac sync disabled for stability.\n"));
+  // Completely empty to avoid any side effects.
 }
 
 /*

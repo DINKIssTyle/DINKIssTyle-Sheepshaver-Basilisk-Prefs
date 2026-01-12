@@ -17,3 +17,6 @@ uv.lock
 macemu_patches/Old
 macemu_patches/macemu.7z
 /macemu_patches/backup
+ppc.log
+.gitignore
+test_iconv

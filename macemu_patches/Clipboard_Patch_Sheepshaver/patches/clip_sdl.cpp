@@ -127,107 +127,14 @@ void ZeroScrap() {
 
 /*
  *  Mac application reads clipboard (from host to guest)
- *  In SheepShaver, this is called but we cannot easily inject data
- *  into the Mac clipboard without 68k traps.
- *
- *  Current limitation: Host->Mac clipboard not implemented for SheepShaver.
+ *  IMPLEMENTATION DISABLED BY USER REQUEST
+ *  This prevents instability caused by recursive trap execution.
+ *  Host -> Mac sync should use ClipboardDaemon via OP_CLIP_* opcodes.
  */
 
 void GetScrap(void **handle, uint32 type, int32 offset) {
-  D(bug("GetScrap handle %p, type %08x, offset %d\n", handle, type, offset));
-
-  // Only handle TEXT type for now
-  if (type != FOURCC('T', 'E', 'X', 'T'))
-    return;
-
-  // Check if host has clipboard text
-  if (!SDL_HasClipboardText())
-    return;
-
-  char *text = SDL_GetClipboardText();
-  if (!text || strlen(text) == 0) {
-    if (text)
-      SDL_free(text);
-    return;
-  }
-
-  // Convert from UTF-8 to Mac encoding if needed
-  char *mac_text = NULL;
-  size_t mac_len = 0;
-  size_t src_len = strlen(text);
-
-  if (!no_clip_conversion && name_encoding != 0) {
-    const char *mac_enc = get_mac_encoding(name_encoding);
-    mac_text = convert_encoding(text, src_len, "UTF-8", mac_enc, &mac_len);
-  }
-
-  const char *src_data = mac_text ? mac_text : text;
-  int32 data_len = mac_text ? (int32)mac_len : (int32)src_len;
-
-  if (data_len <= 0) {
-    if (mac_text)
-      free(mac_text);
-    SDL_free(text);
-    return;
-  }
-
-  // Allocate space for new scrap in MacOS side
-  M68kRegisters r;
-  r.d[0] = data_len;
-  Execute68kTrap(0xa71e, &r); // NewPtrSysClear()
-  uint32 scrap_area = r.a[0];
-
-  if (scrap_area) {
-    // Copy and convert data: LF -> CR for Mac
-    uint8 *p = Mac2HostAddr(scrap_area);
-    for (int32 i = 0; i < data_len; i++) {
-      uint8 c = src_data[i];
-      if (c == '\n')
-        c = '\r';
-      *p++ = c;
-    }
-
-    // Build 68k procedure to call ZeroScrap() and PutScrap()
-    static uint8 proc[] = {
-        0x59,          0x8f,                       // subq.l  #4,sp
-        0xa9,          0xfc,                       // ZeroScrap()
-        0x2f,          0x3c,           0, 0, 0, 0, // move.l  #length,-(sp)
-        0x2f,          0x3c,           0, 0, 0, 0, // move.l  #type,-(sp)
-        0x2f,          0x3c,           0, 0, 0, 0, // move.l  #outbuf,-(sp)
-        0xa9,          0xfe,                       // PutScrap()
-        0x58,          0x8f,                       // addq.l  #4,sp
-        M68K_RTS >> 8, M68K_RTS & 0xff};
-
-    r.d[0] = sizeof(proc);
-    Execute68kTrap(0xa71e, &r); // NewPtrSysClear()
-    uint32 proc_area = r.a[0];
-
-    if (proc_area) {
-      // Copy procedure to Mac memory
-      Host2Mac_memcpy(proc_area, proc, sizeof(proc));
-      WriteMacInt32(proc_area + 6, data_len);
-      WriteMacInt32(proc_area + 12, type);
-      WriteMacInt32(proc_area + 18, scrap_area);
-
-      // Mark that we're putting this data to avoid bounce-back
-      we_put_this_data = true;
-      Execute68k(proc_area, &r);
-
-      // Dispose procedure memory
-      r.a[0] = proc_area;
-      Execute68kTrap(0xa01f, &r); // DisposePtr
-    }
-
-    // Dispose scrap memory
-    r.a[0] = scrap_area;
-    Execute68kTrap(0xa01f, &r); // DisposePtr
-  }
-
-  if (mac_text)
-    free(mac_text);
-  SDL_free(text);
-
-  D(bug("GetScrap: Copied %d bytes from host to Mac clipboard\n", data_len));
+  D(bug("GetScrap: Host->Mac sync disabled for stability.\n"));
+  // Completely empty to avoid any side effects.
 }
 
 /*
