@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Created by DINKIssTyle on 2025. Copyright (C) 2025 DINKI'ssTyle. All rights reserved.
+# Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
 
 """
 Sheepshaver & Basilisk II Preferences Editor
@@ -3302,6 +3302,11 @@ class PrefsEditor(QMainWindow):
         self.settings_tab.load_settings()
         self.scan_and_load_initial_profiles()
         self.check_initial_configuration()
+        
+        # Restore last active tab (0=Basilisk II, 1=Sheepshaver)
+        last_tab = self.settings.value('last_active_tab', 0, type=int)
+        if 0 <= last_tab < self.main_tabs.count():
+            self.main_tabs.setCurrentIndex(last_tab)
 
     def check_initial_configuration(self):
         """Check if any configuration is valid on startup, else warn."""
@@ -3613,6 +3618,11 @@ class PrefsEditor(QMainWindow):
         layout.addWidget(copyright_label)
         
         dialog.exec_()
+
+    def closeEvent(self, event):
+        """Save the current tab index when closing the application."""
+        self.settings.setValue('last_active_tab', self.main_tabs.currentIndex())
+        event.accept()
 
 
 def main():
