@@ -49,7 +49,7 @@ macemu-patch/
 
 ```bash
 git clone https://github.com/DINKIssTyle/DINKIssTyle-Sheepshaver-Basilisk-Prefs.git
-cd DINKIssTyle-Sheepshaver-Basilisk-Prefs/macemu_Shader_Patch
+cd DINKIssTyle-Sheepshaver-Basilisk-Prefs/macemu_Patch
 git clone https://github.com/kanjitalk755/macemu.git
 chmod +x apply_shader_patch.sh
 ./apply_shader_patch.sh

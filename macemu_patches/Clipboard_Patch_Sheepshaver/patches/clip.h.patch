@@ -1,15 +1,6 @@
---- $MACEMU_BASE/BasiliskII/src/include/clip.h	2026-01-11 23:39:22.911583404 +0900
-+++ $MACEMU_BASE/BasiliskII/src/include/clip.h	2026-01-11 21:39:38.958920274 +0900
-@@ -21,6 +21,8 @@
- #ifndef CLIP_H
- #define CLIP_H
- 
-+#include "sysdeps.h"
-+
- extern void ClipInit(void);
- extern void ClipExit(void);
- 
-@@ -28,4 +30,9 @@
+--- macemu/SheepShaver/src/include/clip.h	2026-01-12 19:02:49.437794776 +0900
++++ macemu_patches/Clipboard_Patch_Sheepshaver/patches/clip.h	2026-01-11 19:49:43.609459054 +0900
+@@ -28,4 +28,9 @@
  extern void PutScrap(uint32 type, void *scrap, int32 length);
  extern void GetScrap(void **handle, uint32 type, int32 offset);
  

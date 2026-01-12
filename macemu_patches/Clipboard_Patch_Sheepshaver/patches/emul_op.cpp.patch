@@ -1,5 +1,5 @@
---- $MACEMU_BASE/SheepShaver/src/emul_op.cpp	2026-01-11 23:39:22.977877570 +0900
-+++ $MACEMU_BASE/SheepShaver/src/emul_op.cpp	2026-01-11 22:28:49.720614268 +0900
+--- macemu/SheepShaver/src/emul_op.cpp	2026-01-12 19:02:49.516789942 +0900
++++ macemu_patches/Clipboard_Patch_Sheepshaver/patches/emul_op.cpp	2026-01-11 22:29:00.969980014 +0900
 @@ -18,34 +18,35 @@
   *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
   */

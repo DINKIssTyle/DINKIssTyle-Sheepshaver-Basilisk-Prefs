@@ -11,7 +11,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES_DIR="${SCRIPT_DIR}/patches"
-MACEMU_DIR="${1:-${SCRIPT_DIR}/macemu}"
+MACEMU_DIR="${1:-${SCRIPT_DIR}/../macemu}"
 
 # Color definitions
 RED='\033[0;31m'
@@ -172,16 +172,37 @@ for prefs_file in "${MACEMU_DIR}/BasiliskII/src/prefs.cpp" "${MACEMU_DIR}/SheepS
     fi
 done
 
-# Generate build scripts
-print_info "Generating build scripts..."
+# Generate build scripts in macemu_patches folder
+BUILD_SCRIPTS_DIR="$(dirname "$SCRIPT_DIR")"
+print_info "Generating build scripts in $BUILD_SCRIPTS_DIR..."
 
 # BasiliskII build script
-cat > "${MACEMU_DIR}/BasiliskII/build.sh" << 'BUILDSCRIPT'
+cat > "${BUILD_SCRIPTS_DIR}/build_basiliskii.sh" << 'BUILDSCRIPT'
 #!/bin/bash
 # Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="${SCRIPT_DIR}/src/Unix"
+
+# Resolve macemu path: Argument > Subdirectory > Sibling
+if [ -n "$1" ]; then
+    MACEMU_DIR="$1"
+elif [ -d "${SCRIPT_DIR}/macemu" ]; then
+    MACEMU_DIR="${SCRIPT_DIR}/macemu"
+elif [ -d "${SCRIPT_DIR}/../macemu" ]; then
+    MACEMU_DIR="${SCRIPT_DIR}/../macemu"
+else
+    echo "Error: macemu directory not found."
+    echo "Usage: $0 [path_to_macemu_root]"
+    exit 1
+fi
+
+BUILD_DIR="${MACEMU_DIR}/BasiliskII/src/Unix"
+
+if [ ! -d "$BUILD_DIR" ]; then
+    echo "Error: Build directory not found: $BUILD_DIR"
+    exit 1
+fi
+
 cd "$BUILD_DIR"
 echo "[INFO] Building BasiliskII..."
 [ ! -f "../SDL/video_shader.cpp" ] && echo "[ERROR] video_shader.cpp not found. Apply patches first." && exit 1
@@ -190,15 +211,35 @@ echo "[INFO] Building BasiliskII..."
 make -j$(nproc)
 [ -f "BasiliskII" ] && echo "[SUCCESS] Build complete: ${BUILD_DIR}/BasiliskII" || echo "[ERROR] Build failed!"
 BUILDSCRIPT
-chmod +x "${MACEMU_DIR}/BasiliskII/build.sh"
+chmod +x "${BUILD_SCRIPTS_DIR}/build_basiliskii.sh"
 
 # SheepShaver build script
-cat > "${MACEMU_DIR}/SheepShaver/build.sh" << 'BUILDSCRIPT'
+cat > "${BUILD_SCRIPTS_DIR}/build_sheepshaver.sh" << 'BUILDSCRIPT'
 #!/bin/bash
 # Created by DINKIssTyle on 2026. Copyright (C) 2026 DINKI'ssTyle. All rights reserved.
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="${SCRIPT_DIR}/src/Unix"
+
+# Resolve macemu path: Argument > Subdirectory > Sibling
+if [ -n "$1" ]; then
+    MACEMU_DIR="$1"
+elif [ -d "${SCRIPT_DIR}/macemu" ]; then
+    MACEMU_DIR="${SCRIPT_DIR}/macemu"
+elif [ -d "${SCRIPT_DIR}/../macemu" ]; then
+    MACEMU_DIR="${SCRIPT_DIR}/../macemu"
+else
+    echo "Error: macemu directory not found."
+    echo "Usage: $0 [path_to_macemu_root]"
+    exit 1
+fi
+
+BUILD_DIR="${MACEMU_DIR}/SheepShaver/src/Unix"
+
+if [ ! -d "$BUILD_DIR" ]; then
+    echo "Error: Build directory not found: $BUILD_DIR"
+    exit 1
+fi
+
 cd "$BUILD_DIR"
 echo "[INFO] Building SheepShaver..."
 [ ! -f "../SDL/video_shader.cpp" ] && echo "[ERROR] video_shader.cpp not found. Apply patches first." && exit 1
@@ -207,7 +248,7 @@ echo "[INFO] Building SheepShaver..."
 make -j$(nproc)
 [ -f "SheepShaver" ] && echo "[SUCCESS] Build complete: ${BUILD_DIR}/SheepShaver" || echo "[ERROR] Build failed!"
 BUILDSCRIPT
-chmod +x "${MACEMU_DIR}/SheepShaver/build.sh"
+chmod +x "${BUILD_SCRIPTS_DIR}/build_sheepshaver.sh"
 
 print_success "Build scripts generated!"
 
@@ -217,6 +258,6 @@ print_success "All patches applied successfully!"
 echo "======================================"
 echo ""
 print_info "To build, run the following scripts:"
-echo "  - BasiliskII: ${MACEMU_DIR}/BasiliskII/build.sh"
-echo "  - SheepShaver: ${MACEMU_DIR}/SheepShaver/build.sh"
+echo "  - BasiliskII: ${BUILD_SCRIPTS_DIR}/build_basiliskii.sh [macemu_path]"
+echo "  - SheepShaver: ${BUILD_SCRIPTS_DIR}/build_sheepshaver.sh [macemu_path]"
 

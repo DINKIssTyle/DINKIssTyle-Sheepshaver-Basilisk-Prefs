@@ -1,0 +1,202 @@
+--- macemu/SheepShaver/src/include/thunks.h	2026-01-12 19:02:49.519789758 +0900
++++ macemu_patches/Clipboard_Patch_Sheepshaver/patches/thunks.h	2026-01-11 21:36:48.849439269 +0900
+@@ -67,6 +67,10 @@
+   NATIVE_NAMED_CHECK_LOAD_INVOC,
+   NATIVE_GET_NAMED_RESOURCE,
+   NATIVE_GET_1_NAMED_RESOURCE,
++  NATIVE_CLIP_CHECK,
++  NATIVE_CLIP_GET_SIZE,
++  NATIVE_CLIP_GET_DATA,
++  NATIVE_CLIP_PUT_DATA,
+   NATIVE_OP_MAX
+ };
+ 
+@@ -90,7 +94,6 @@
+ // Return the routine descriptor address of the native function
+ extern uint32 NativeRoutineDescriptor(int selector);
+ 
+-
+ /*
+  *  Helpers to share 32-bit addressable data with MacOS
+  *
+@@ -112,111 +115,97 @@
+  */
+ 
+ class SheepMem {
+-	static uint32 align(uint32 size);
++  static uint32 align(uint32 size);
++
+ protected:
+-	static uint32  page_size;
+-	static uintptr zero_page;
+-	static uintptr base;
+-	static uintptr data;
+-	static uintptr proc;
+-	static const uint32 size = 0x80000; // 512 KB
++  static uint32 page_size;
++  static uintptr zero_page;
++  static uintptr base;
++  static uintptr data;
++  static uintptr proc;
++  static const uint32 size = 0x80000; // 512 KB
+ public:
+-	static bool Init(void);
+-	static void Exit(void);
+-	static uint32 PageSize();
+-	static uint32 ZeroPage();
+-	static uint32 Reserve(uint32 size);
+-	static void Release(uint32 size);
+-	static uint32 ReserveProc(uint32 size);
+-	friend class SheepVar;
++  static bool Init(void);
++  static void Exit(void);
++  static uint32 PageSize();
++  static uint32 ZeroPage();
++  static uint32 Reserve(uint32 size);
++  static void Release(uint32 size);
++  static uint32 ReserveProc(uint32 size);
++  friend class SheepVar;
+ };
+ 
+-inline uint32 SheepMem::align(uint32 size)
+-{
+-	// Align on 4 bytes boundaries
+-	return (size + 3) & -4;
++inline uint32 SheepMem::align(uint32 size) {
++  // Align on 4 bytes boundaries
++  return (size + 3) & -4;
+ }
+ 
+-inline uint32 SheepMem::PageSize()
+-{
+-  return page_size;
+-}
++inline uint32 SheepMem::PageSize() { return page_size; }
+ 
+-inline uint32 SheepMem::ZeroPage()
+-{
+-  return zero_page;
+-}
++inline uint32 SheepMem::ZeroPage() { return zero_page; }
+ 
+-inline uint32 SheepMem::Reserve(uint32 size)
+-{
+-	data -= align(size);
+-	assert(data >= proc);
+-	return data;
++inline uint32 SheepMem::Reserve(uint32 size) {
++  data -= align(size);
++  assert(data >= proc);
++  return data;
+ }
+ 
+-inline void SheepMem::Release(uint32 size)
+-{
+-	data += align(size);
+-}
++inline void SheepMem::Release(uint32 size) { data += align(size); }
+ 
+-inline uint32 SheepMem::ReserveProc(uint32 size)
+-{
+-	uint32 mproc = proc;
+-	proc += align(size);
+-	assert(proc < data);
+-	return mproc;
++inline uint32 SheepMem::ReserveProc(uint32 size) {
++  uint32 mproc = proc;
++  proc += align(size);
++  assert(proc < data);
++  return mproc;
+ }
+ 
+-static inline uint32 SheepProc(const uint8 *proc, uint32 proc_size)
+-{
+-	uint32 mac_proc = SheepMem::ReserveProc(proc_size);
+-	Host2Mac_memcpy(mac_proc, proc, proc_size);
+-	return mac_proc;
++static inline uint32 SheepProc(const uint8 *proc, uint32 proc_size) {
++  uint32 mac_proc = SheepMem::ReserveProc(proc_size);
++  Host2Mac_memcpy(mac_proc, proc, proc_size);
++  return mac_proc;
+ }
+ 
+-#define BUILD_SHEEPSHAVER_PROCEDURE(PROC)							\
+-	static uint32 PROC = 0;											\
+-	if (PROC == 0)													\
+-		PROC = SheepProc(PROC##_template, sizeof(PROC##_template))
+-
+-class SheepVar
+-{
+-	uint32 m_base;
+-	uint32 m_size;
++#define BUILD_SHEEPSHAVER_PROCEDURE(PROC)                                      \
++  static uint32 PROC = 0;                                                      \
++  if (PROC == 0)                                                               \
++  PROC = SheepProc(PROC##_template, sizeof(PROC##_template))
++
++class SheepVar {
++  uint32 m_base;
++  uint32 m_size;
++
+ public:
+-	SheepVar(uint32 requested_size);
+-	~SheepVar() { SheepMem::Release(m_size); }
+-	uint32 addr() const { return m_base; }
++  SheepVar(uint32 requested_size);
++  ~SheepVar() { SheepMem::Release(m_size); }
++  uint32 addr() const { return m_base; }
+ };
+ 
+-inline SheepVar::SheepVar(uint32 requested_size)
+-{
+-	m_size = SheepMem::align(requested_size);
+-	m_base = SheepMem::Reserve(m_size);
++inline SheepVar::SheepVar(uint32 requested_size) {
++  m_size = SheepMem::align(requested_size);
++  m_base = SheepMem::Reserve(m_size);
+ }
+ 
+ // TODO: optimize for 32-bit platforms
+ 
+-template< int requested_size >
+-struct SheepArray : public SheepVar
+-{
+-	SheepArray() : SheepVar(requested_size) { }
+-};
+-
+-struct SheepVar32 : public SheepVar
+-{
+-	SheepVar32() : SheepVar(4) { }
+-	SheepVar32(uint32 value) : SheepVar(4) { set_value(value); }
+-	uint32 value() const { return ReadMacInt32(addr()); }
+-	void set_value(uint32 v) { WriteMacInt32(addr(), v); }
+-};
+-
+-struct SheepString : public SheepVar
+-{
+-	SheepString(const char *str) : SheepVar(strlen(str) + 1)
+-		{ if (str) strcpy(value(), str); else WriteMacInt8(addr(), 0); }
+-	char *value() const
+-		{ return (char *)Mac2HostAddr(addr()); }
++template <int requested_size> struct SheepArray : public SheepVar {
++  SheepArray() : SheepVar(requested_size) {}
++};
++
++struct SheepVar32 : public SheepVar {
++  SheepVar32() : SheepVar(4) {}
++  SheepVar32(uint32 value) : SheepVar(4) { set_value(value); }
++  uint32 value() const { return ReadMacInt32(addr()); }
++  void set_value(uint32 v) { WriteMacInt32(addr(), v); }
++};
++
++struct SheepString : public SheepVar {
++  SheepString(const char *str) : SheepVar(strlen(str) + 1) {
++    if (str)
++      strcpy(value(), str);
++    else
++      WriteMacInt8(addr(), 0);
++  }
++  char *value() const { return (char *)Mac2HostAddr(addr()); }
+ };
+ 
+ #endif
