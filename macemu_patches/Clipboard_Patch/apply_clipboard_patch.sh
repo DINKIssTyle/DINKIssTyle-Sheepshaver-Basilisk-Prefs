@@ -128,11 +128,10 @@ apply_sheepshaver_patches() {
     apply_patch "${PATCHES_DIR}/sheepshaver_emul_op_h.patch"
     apply_patch "${PATCHES_DIR}/sheepshaver_emul_op_cpp.patch"
     
-    # Copy clip_sdl.cpp to SheepShaver SDL folder (uses same file as BasiliskII)
+    # Copy clip_sdl.cpp to SheepShaver Unix folder (Makefile looks here)
     if [ -f "${PATCHES_DIR}/clip_sdl.cpp" ]; then
-        mkdir -p "${MACEMU_DIR}/SheepShaver/src/SDL"
-        cp "${PATCHES_DIR}/clip_sdl.cpp" "${MACEMU_DIR}/SheepShaver/src/SDL/clip_sdl.cpp"
-        print_success "  Copied clip_sdl.cpp to SheepShaver"
+        cp "${PATCHES_DIR}/clip_sdl.cpp" "${MACEMU_DIR}/SheepShaver/src/Unix/clip_sdl.cpp"
+        print_success "  Copied clip_sdl.cpp to SheepShaver/src/Unix/"
     fi
     
     # Patch SheepShaver Makefile to use clip_sdl.cpp instead of clip_dummy.cpp
