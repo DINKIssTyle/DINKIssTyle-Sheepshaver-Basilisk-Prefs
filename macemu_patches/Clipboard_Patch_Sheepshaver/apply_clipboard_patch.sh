@@ -43,14 +43,14 @@ echo ""
 # Create SDL folder if it doesn't exist
 mkdir -p "$MACEMU_PATH/SheepShaver/src/SDL"
 
-# Copy clip_sdl.cpp (main clipboard implementation)
+# Copy clip_sdl.cpp as clip_ss_sdl.cpp to avoid conflict with BasiliskII (shared dir)
 echo -e "${BLUE}[INFO]${NC} Applying clipboard patch to SheepShaver..."
 if [ -f "$PATCHES_DIR/clip_sdl.cpp" ]; then
-    cp "$PATCHES_DIR/clip_sdl.cpp" "$MACEMU_PATH/SheepShaver/src/SDL/clip_sdl.cpp"
-    echo -e "${GREEN}[SUCCESS]${NC}   Copied clip_sdl.cpp to SheepShaver/src/SDL/"
+    cp "$PATCHES_DIR/clip_sdl.cpp" "$MACEMU_PATH/SheepShaver/src/SDL/clip_ss_sdl.cpp"
+    echo -e "${GREEN}[SUCCESS]${NC}   Copied clip_sdl.cpp to SheepShaver/src/SDL/clip_ss_sdl.cpp"
 elif [ -f "$PATCHES_DIR/clip_sdl_ss.cpp" ]; then
-    cp "$PATCHES_DIR/clip_sdl_ss.cpp" "$MACEMU_PATH/SheepShaver/src/SDL/clip_sdl.cpp"
-    echo -e "${GREEN}[SUCCESS]${NC}   Copied clip_sdl_ss.cpp as clip_sdl.cpp"
+    cp "$PATCHES_DIR/clip_sdl_ss.cpp" "$MACEMU_PATH/SheepShaver/src/SDL/clip_ss_sdl.cpp"
+    echo -e "${GREEN}[SUCCESS]${NC}   Copied clip_sdl_ss.cpp to SheepShaver/src/SDL/clip_ss_sdl.cpp"
 else
     echo -e "${RED}[ERROR]${NC}   Neither clip_sdl.cpp nor clip_sdl_ss.cpp found in patches folder"
     exit 1
@@ -118,13 +118,14 @@ if [ -f "$MAKEFILE" ]; then
     echo -e "${BLUE}[INFO]${NC} Patching Makefile..."
     
     if grep -q "clip_dummy.cpp" "$MAKEFILE"; then
-        sed -i 's|\.\.\/dummy\/clip_dummy\.cpp|../SDL/clip_sdl.cpp|g' "$MAKEFILE"
-        echo -e "${GREEN}[SUCCESS]${NC}   Patched Makefile to use clip_sdl.cpp"
+        sed -i 's|\.\.\/dummy\/clip_dummy\.cpp|../SDL/clip_ss_sdl.cpp|g' "$MAKEFILE"
+        echo -e "${GREEN}[SUCCESS]${NC}   Patched Makefile to use clip_ss_sdl.cpp"
     elif grep -q "clip_unix.cpp" "$MAKEFILE"; then
-        sed -i 's|clip_unix\.cpp|../SDL/clip_sdl.cpp|g' "$MAKEFILE"
-        echo -e "${GREEN}[SUCCESS]${NC}   Patched Makefile to use clip_sdl.cpp"
+        sed -i 's|clip_unix\.cpp|../SDL/clip_ss_sdl.cpp|g' "$MAKEFILE"
+        echo -e "${GREEN}[SUCCESS]${NC}   Patched Makefile to use clip_ss_sdl.cpp"
     elif grep -q "clip_sdl.cpp" "$MAKEFILE"; then
-        echo -e "${YELLOW}[INFO]${NC}   Makefile already uses clip_sdl.cpp"
+        sed -i 's|clip_sdl.cpp|clip_ss_sdl.cpp|g' "$MAKEFILE"
+        echo -e "${GREEN}[SUCCESS]${NC}   Patched Makefile to use clip_ss_sdl.cpp (was clip_sdl.cpp)"
     fi
     
     if ! grep -q "\-lX11" "$MAKEFILE"; then
@@ -139,14 +140,14 @@ fi
 CONFIGURE="$MACEMU_PATH/SheepShaver/src/Unix/configure"
 if [ -f "$CONFIGURE" ]; then
     echo -e "${BLUE}[INFO]${NC} Patching configure..."
-    sed -i 's|\.\./dummy/clip_dummy\.cpp|../SDL/clip_sdl.cpp|g' "$CONFIGURE"
+    sed -i 's|\.\./dummy/clip_dummy\.cpp|../SDL/clip_ss_sdl.cpp|g' "$CONFIGURE"
     echo -e "${GREEN}[SUCCESS]${NC}   Patched configure"
 fi
 
 MAKEFILE_IN="$MACEMU_PATH/SheepShaver/src/Unix/Makefile.in"
 if [ -f "$MAKEFILE_IN" ]; then
     echo -e "${BLUE}[INFO]${NC} Patching Makefile.in..."
-    sed -i 's|\.\./dummy/clip_dummy\.cpp|../SDL/clip_sdl.cpp|g' "$MAKEFILE_IN"
+    sed -i 's|\.\./dummy/clip_dummy\.cpp|../SDL/clip_ss_sdl.cpp|g' "$MAKEFILE_IN"
     echo -e "${GREEN}[SUCCESS]${NC}   Patched Makefile.in"
 fi
 
@@ -154,12 +155,16 @@ CONFIGURE_AC="$MACEMU_PATH/SheepShaver/src/Unix/configure.ac"
 if [ -f "$CONFIGURE_AC" ]; then
     echo -e "${BLUE}[INFO]${NC} Patching configure.ac..."
     if grep -q "\.\./dummy/clip_dummy\.cpp" "$CONFIGURE_AC"; then
-        sed -i 's|\.\./dummy/clip_dummy\.cpp|../SDL/clip_sdl.cpp|g' "$CONFIGURE_AC"
+        sed -i 's|\.\./dummy/clip_dummy\.cpp|../SDL/clip_ss_sdl.cpp|g' "$CONFIGURE_AC"
         echo -e "${GREEN}[SUCCESS]${NC}   Patched configure.ac (replaced clip_dummy.cpp)"
     fi
     if grep -q "clip_unix\.cpp" "$CONFIGURE_AC"; then
-        sed -i 's|clip_unix\.cpp|../SDL/clip_sdl.cpp|g' "$CONFIGURE_AC"
+        sed -i 's|clip_unix\.cpp|../SDL/clip_ss_sdl.cpp|g' "$CONFIGURE_AC"
         echo -e "${GREEN}[SUCCESS]${NC}   Patched configure.ac (replaced clip_unix.cpp)"
+    fi
+    if grep -q "clip_sdl\.cpp" "$CONFIGURE_AC"; then
+        sed -i 's|clip_sdl\.cpp|../SDL/clip_ss_sdl.cpp|g' "$CONFIGURE_AC"
+        echo -e "${GREEN}[SUCCESS]${NC}   Patched configure.ac (replaced clip_sdl.cpp)"
     fi
     # Add -lX11 to LIBS in configure.ac if not present?
     # Actually, let's just rely on the clip_dummy replacement being enough. 

@@ -209,7 +209,14 @@ echo "[INFO] Building BasiliskII..."
 [ ! -f "configure" ] && NO_CONFIGURE=1 ./autogen.sh
 [ ! -f "Makefile" ] && ./configure --enable-sdl-video=yes --enable-sdl-audio=yes --disable-vosf --without-esd --without-mon --with-gtk --enable-jit-compiler
 make -j$(nproc)
-[ -f "BasiliskII" ] && echo "[SUCCESS] Build complete: ${BUILD_DIR}/BasiliskII" || echo "[ERROR] Build failed!"
+if [ -f "BasiliskII" ]; then
+    echo "[SUCCESS] Build complete: ${BUILD_DIR}/BasiliskII"
+    cp "BasiliskII" "${SCRIPT_DIR}/BasiliskII"
+    echo "[INFO] Copied executable to: ${SCRIPT_DIR}/BasiliskII"
+else
+    echo "[ERROR] Build failed!"
+    exit 1
+fi
 BUILDSCRIPT
 chmod +x "${BUILD_SCRIPTS_DIR}/build_basiliskii.sh"
 
@@ -246,7 +253,14 @@ echo "[INFO] Building SheepShaver..."
 [ ! -f "configure" ] && NO_CONFIGURE=1 ./autogen.sh
 [ ! -f "Makefile" ] && ./configure --enable-sdl-video=yes --enable-sdl-audio=yes --disable-vosf --without-esd --without-mon --with-gtk --enable-jit-compiler
 make -j$(nproc)
-[ -f "SheepShaver" ] && echo "[SUCCESS] Build complete: ${BUILD_DIR}/SheepShaver" || echo "[ERROR] Build failed!"
+if [ -f "SheepShaver" ]; then
+    echo "[SUCCESS] Build complete: ${BUILD_DIR}/SheepShaver"
+    cp "SheepShaver" "${SCRIPT_DIR}/SheepShaver"
+    echo "[INFO] Copied executable to: ${SCRIPT_DIR}/SheepShaver"
+else
+    echo "[ERROR] Build failed!"
+    exit 1
+fi
 BUILDSCRIPT
 chmod +x "${BUILD_SCRIPTS_DIR}/build_sheepshaver.sh"
 

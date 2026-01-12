@@ -3,13 +3,13 @@
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Resolve macemu path: Argument > Sibling > Subdirectory
+# Resolve macemu path: Argument > Subdirectory > Sibling
 if [ -n "$1" ]; then
     MACEMU_DIR="$1"
-elif [ -d "${SCRIPT_DIR}/../macemu" ]; then
-    MACEMU_DIR="${SCRIPT_DIR}/../macemu"
 elif [ -d "${SCRIPT_DIR}/macemu" ]; then
     MACEMU_DIR="${SCRIPT_DIR}/macemu"
+elif [ -d "${SCRIPT_DIR}/../macemu" ]; then
+    MACEMU_DIR="${SCRIPT_DIR}/../macemu"
 else
     echo "Error: macemu directory not found."
     echo "Usage: $0 [path_to_macemu_root]"
@@ -29,4 +29,11 @@ echo "[INFO] Building BasiliskII..."
 [ ! -f "configure" ] && NO_CONFIGURE=1 ./autogen.sh
 [ ! -f "Makefile" ] && ./configure --enable-sdl-video=yes --enable-sdl-audio=yes --disable-vosf --without-esd --without-mon --with-gtk --enable-jit-compiler
 make -j$(nproc)
-[ -f "BasiliskII" ] && echo "[SUCCESS] Build complete: ${BUILD_DIR}/BasiliskII" || echo "[ERROR] Build failed!"
+if [ -f "BasiliskII" ]; then
+    echo "[SUCCESS] Build complete: ${BUILD_DIR}/BasiliskII"
+    cp "BasiliskII" "${SCRIPT_DIR}/BasiliskII"
+    echo "[INFO] Copied executable to: ${SCRIPT_DIR}/BasiliskII"
+else
+    echo "[ERROR] Build failed!"
+    exit 1
+fi
